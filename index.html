@@ -7,6 +7,9 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<!-- QR generate + scan -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
 :root {
@@ -34,25 +37,38 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
 #calc-app { position: absolute; inset: 0; background: var(--s-bg); display: flex; flex-direction: column; z-index: 1; }
 .calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 24px 12px; }
 .calc-expr { font-size: 17px; color: #444; text-align: right; min-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
-.calc-num  { font-size: 64px; font-weight: 300; color: #fff; text-align: right; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.2s; }
+/* CALCULATOR iOS */
+#calc-app { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; z-index: 1; }
+.calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 24px 8px; }
+.calc-expr { font-size: 20px; color: rgba(255,255,255,0.4); text-align: right; min-height: 26px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0; font-weight: 300; }
+.calc-num  { font-size: 80px; font-weight: 200; color: #fff; text-align: right; line-height: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: font-size 0.1s, color 0.2s;
+  letter-spacing: -2px; }
 .calc-num.match { color: #4DBBFF; }
-.calc-hint { font-size: 11px; color: #1B4F8A; text-align: right; height: 16px; margin-top: 2px; }
-.calc-hint.on { color: var(--s-eq); animation: hblink 0.9s infinite; }
+.calc-hint { font-size: 11px; color: rgba(255,255,255,0.15); text-align: right; height: 14px; margin-top: 4px; }
+.calc-hint.on { color: #ff9f0a; animation: hblink 0.9s infinite; }
 @keyframes hblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: #0a0a0a; }
-.cb { height: 78px; border: none; font-size: 24px; font-weight: 400; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; transition: filter 0.06s, transform 0.06s; }
-.cb:active { filter: brightness(1.3); transform: scale(0.96); }
-.cb.num  { background: var(--s-num); color: #fff; }
-.cb.func { background: var(--s-func); color: #bbb; font-size: 18px; }
-.cb.op   { background: var(--s-op); color: var(--s-op-text); font-size: 26px; }
-.cb.eq   { background: var(--s-eq); color: #fff; font-size: 26px; }
-.cb.zero { grid-column: span 2; justify-content: flex-start; padding-left: 28px; }
-.reset-row { text-align: center; padding: 4px; background: var(--s-bg); }
-.reset-btn { background: transparent; border: none; color: #1e1e1e; font-size: 10px; cursor: pointer; }
-.samsung-nav { height: 46px; background: var(--s-bg); display: flex; align-items: center; justify-content: center; gap: 32px; }
-.snav-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; }
-.snav-dot.a { background: #888; width: 16px; border-radius: 3px; }
+
+.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 12px 16px 20px; background: #000; }
+.cb { height: 80px; border: none; font-size: 32px; font-weight: 400; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: filter 0.08s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent; }
+.cb:active { filter: brightness(1.6); transform: scale(0.93); }
+.cb.num  { background: #333333; color: #fff; }
+.cb.func { background: #a5a5a5; color: #000; font-size: 26px; font-weight: 500; }
+.cb.op   { background: #ff9f0a; color: #fff; font-weight: 500; }
+.cb.eq   { background: #ff9f0a; color: #fff; font-size: 36px; }
+.cb.zero { grid-column: span 2; border-radius: 40px; justify-content: flex-start; padding-left: 30px; font-size: 32px; }
+.cb.op.active-op { background: #fff; color: #ff9f0a; }
+
+.reset-row { text-align: center; padding: 2px; background: #000; }
+.reset-btn { background: transparent; border: none; color: #111; font-size: 10px; cursor: pointer; padding: 4px 20px; }
+
+/* iOS home indicator */
+.ios-indicator { height: 34px; background: #000; display: flex; align-items: center; justify-content: center; }
+.ios-bar { width: 134px; height: 5px; background: #fff; border-radius: 3px; opacity: 0.3; }
 
 /* SETUP */
 #setup-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
@@ -272,7 +288,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
 .td { width: 7px; height: 7px; background: #0052FF; border-radius: 50%; animation: tdot 1.2s infinite; }
 .td:nth-child(2) { animation-delay: 0.2s; }
 .td:nth-child(3) { animation-delay: 0.4s; }
-@keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+@keyframes scanline { 0%{top:10px} 100%{top:calc(100% - 12px)} }
   flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 20; }
 .disc-ov.show { display: flex; }
 .disc-icon { font-size: 52px; }
@@ -433,7 +449,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
     <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>🔋</span></div>
   </div>
 
-  <!-- CALCULATOR -->
+  <!-- CALCULATOR iOS -->
   <div id="calc-app">
     <div class="calc-display">
       <div class="calc-expr" id="cExpr"></div>
@@ -441,22 +457,26 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
       <div class="calc-hint" id="cHint"></div>
     </div>
     <div class="calc-grid">
-      <button class="cb func" onclick="cp('AC')">AC</button>
-      <button class="cb func" onclick="cp('+/-')">+/−</button>
+      <button class="cb func" onclick="cp('AC')" id="cbAC">AC</button>
+      <button class="cb func" onclick="cp('+/-')">⁺∕₋</button>
       <button class="cb func" onclick="cp('%')">%</button>
-      <button class="cb op"   onclick="cp('/')">÷</button>
+      <button class="cb op"   onclick="cp('/')" id="op-div">÷</button>
+
       <button class="cb num"  onclick="cp('7')">7</button>
       <button class="cb num"  onclick="cp('8')">8</button>
       <button class="cb num"  onclick="cp('9')">9</button>
-      <button class="cb op"   onclick="cp('*')">×</button>
+      <button class="cb op"   onclick="cp('*')" id="op-mul">×</button>
+
       <button class="cb num"  onclick="cp('4')">4</button>
       <button class="cb num"  onclick="cp('5')">5</button>
       <button class="cb num"  onclick="cp('6')">6</button>
-      <button class="cb op"   onclick="cp('-')">−</button>
+      <button class="cb op"   onclick="cp('-')" id="op-sub">−</button>
+
       <button class="cb num"  onclick="cp('1')">1</button>
       <button class="cb num"  onclick="cp('2')">2</button>
       <button class="cb num"  onclick="cp('3')">3</button>
-      <button class="cb op"   onclick="cp('+')">+</button>
+      <button class="cb op"   onclick="cp('+')" id="op-add">+</button>
+
       <button class="cb num zero" onclick="cp('0')">0</button>
       <button class="cb num"  onclick="cp('.')">.</button>
       <button class="cb eq"   onclick="cp('=')">=</button>
@@ -464,12 +484,33 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
     <div class="reset-row">
       <button class="reset-btn" onclick="resetCode()">· · ·</button>
     </div>
-    <div class="samsung-nav">
-      <div class="snav-dot"></div><div class="snav-dot a"></div><div class="snav-dot"></div>
-    </div>
+    <div class="ios-indicator"><div class="ios-bar"></div></div>
   </div>
 
-  <!-- SETUP -->
+  <!-- SETUP NUME — primul pas, înainte de PIN -->
+  <div id="name-app" style="position:absolute;inset:0;background:var(--t-bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:32px 28px;gap:18px;
+    opacity:0;pointer-events:none;transition:opacity 0.4s;z-index:52;">
+    <div style="width:68px;height:68px;background:var(--t-primary);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 50px rgba(0,82,255,0.4)">👤</div>
+    <div style="font-size:20px;font-weight:700;color:var(--t-text);text-align:center">Bun venit în T.irea</div>
+    <div style="font-size:13px;color:var(--t-muted);text-align:center;line-height:1.7">Cum vrei să apari în chat-ul prietenilor tăi?<br>Poți folosi un nume sau o poreclă.</div>
+    <input id="nameInput" type="text" maxlength="24"
+      placeholder="Numele sau porecla ta..."
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      oninput="nameTyped(this)"
+      style="width:100%;padding:16px;background:var(--t-surface);border:2px solid var(--t-border);
+        border-radius:14px;color:var(--t-text);font-size:18px;font-family:inherit;
+        text-align:center;outline:none;transition:border-color 0.2s;">
+    <div id="namePreview" style="font-size:12px;color:var(--t-muted);min-height:16px;text-align:center"></div>
+    <button id="nameOkBtn" onclick="confirmName()" disabled
+      style="width:100%;padding:14px;background:var(--t-primary);border:none;
+        border-radius:14px;color:white;font-size:15px;font-weight:600;cursor:pointer;
+        font-family:inherit;opacity:0.4;transition:opacity 0.2s">
+      Continuă →
+    </button>
+  </div>
+
+  <!-- SETUP PIN -->
   <div id="setup-app">
     <div class="setup-logo">🔒</div>
     <div class="setup-title">Alege codul tău secret</div>
@@ -537,24 +578,13 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
     </div>
     <div class="t-section" id="convLabel" style="padding-top:2px"></div>
     <div class="t-conv-list" id="convList">
-      <div class="t-conv contact-item" data-name="ana n." onclick="openChat('Ana N.','AN')">
-        <div class="t-av t-av-online">AN</div>
-        <div class="t-conv-info"><div class="t-cname">Ana N.</div></div>
-        <button onclick="event.stopPropagation();showMyId()" style="background:var(--t-primary);border:none;color:white;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer">📡 ID</button>
+      <div class="t-no-contacts" id="noContacts" style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="font-size:40px">👥</div>
+        <div style="font-size:14px;color:var(--t-muted)">Niciun contact încă</div>
+        <div style="font-size:12px;color:#334466;line-height:1.6">Adaugă prieteni prin QR, PIN sau link</div>
+        <button onclick="openAddFriend()" style="margin-top:6px;background:var(--t-primary);border:none;color:white;padding:10px 22px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">+ Adaugă prieten</button>
       </div>
-      <div class="t-conv contact-item" data-name="mihai v." onclick="openChat('Mihai V.','MV')">
-        <div class="t-av">MV</div>
-        <div class="t-conv-info"><div class="t-cname">Mihai V.</div></div>
-      </div>
-      <div class="t-conv contact-item" data-name="radu d." onclick="openChat('Radu D.','RD')">
-        <div class="t-av">RD</div>
-        <div class="t-conv-info"><div class="t-cname">Radu D.</div></div>
-      </div>
-      <div class="t-conv contact-item" data-name="ioana p." onclick="openChat('Ioana P.','IO')">
-        <div class="t-av">IO</div>
-        <div class="t-conv-info"><div class="t-cname">Ioana P.</div></div>
-      </div>
-      <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
+      <div class="t-no-results" id="noResults" style="display:none">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
       <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
@@ -575,7 +605,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
         <div class="profil-name">Utilizator</div>
         <div class="profil-handle" id="profilHandle">@tirea_user</div>
         <div class="profil-stats">
-          <div class="p-stat"><div class="p-stat-num">4</div><div class="p-stat-label">Prieteni</div></div>
+          <div class="p-stat"><div class="p-stat-num" id="pFriendCount">0</div><div class="p-stat-label">Prieteni</div></div>
           <div class="p-stat"><div class="p-stat-num" id="pMsgCount">0</div><div class="p-stat-label">Mesaje</div></div>
           <div class="p-stat"><div class="p-stat-num">🔐</div><div class="p-stat-label">Criptat</div></div>
         </div>
@@ -623,6 +653,11 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
         <div class="toggle on" id="tog-read" onclick="toggleReadReceipt()"></div>
       </div>
       <div class="setari-group-title">SECURITATE</div>
+      <div class="setari-row">
+        <div class="s-row-icon" style="background:rgba(0,200,150,0.1)">📳</div>
+        <div class="s-row-info"><div class="s-row-label">Shake to Hide</div><div class="s-row-sub">scutură telefonul → ascunde instant</div></div>
+        <button id="shakePermBtn" onclick="checkShakeBtn()" style="background:var(--t-green);border:none;color:white;font-size:10px;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600">✓ Activ</button>
+      </div>
       <div class="setari-row" onclick="openSecretScreen()">
         <div class="s-row-icon" style="background:rgba(0,82,255,0.1)">🔑</div>
         <div class="s-row-info"><div class="s-row-label">Parolă secretă comună</div><div class="s-row-sub">protecție maximă AES-256 · știți doar voi doi</div></div>
@@ -791,17 +826,43 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
   <!-- QR SCREEN -->
   <div id="qr-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('qr-app')">‹</span>
+      <span class="page-back" onclick="closeQRApp()">‹</span>
       <div class="page-title">QR Code</div>
     </div>
     <div class="qr-body">
-      <div class="qr-label">Arată acest cod prietenului tău</div>
-      <div class="qr-frame" id="qrFrame"></div>
-      <div class="qr-id-text" id="qrIdText">ID: —</div>
-      <div class="qr-orr">— sau —</div>
-      <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <button class="qr-scan-btn" onclick="simulateScan()">📷 Scanează QR</button>
-      <div class="qr-scan-result" id="qrScanResult"></div>
+      <!-- TAB-URI -->
+      <div style="display:flex;gap:8px;width:100%;margin-bottom:4px">
+        <button class="p2p-tab active" id="qr-tab-show" onclick="qrTab('show')">📱 Al meu</button>
+        <button class="p2p-tab" id="qr-tab-scan" onclick="qrTab('scan')">📷 Scanează</button>
+      </div>
+
+      <!-- PANEL: AFIȘEAZĂ QR-UL MEU -->
+      <div id="qr-show-panel" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%">
+        <div class="qr-label">Arată acest cod prietenului tău</div>
+        <div id="qrCanvas" style="background:white;padding:12px;border-radius:16px;display:flex;align-items:center;justify-content:center;width:180px;height:180px"></div>
+        <div class="qr-id-text" id="qrIdText">ID: —</div>
+        <div style="font-size:11px;color:var(--t-muted);text-align:center;line-height:1.6">Prietenul tău scanează acest cod<br>cu tab-ul „Scanează" din T.irea</div>
+      </div>
+
+      <!-- PANEL: SCANNER CAMERA -->
+      <div id="qr-scan-panel" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%">
+        <div class="qr-label">Îndreptă camera spre QR-ul prietenului</div>
+        <div style="position:relative;width:220px;height:220px;border-radius:16px;overflow:hidden;background:#000;border:2px solid var(--t-primary)">
+          <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" autoplay playsinline muted></video>
+          <canvas id="qrScanCanvas" style="display:none"></canvas>
+          <!-- Cadru de scanare animat -->
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <div style="position:absolute;top:10px;left:10px;width:30px;height:30px;border-top:3px solid #4DBBFF;border-left:3px solid #4DBBFF;border-radius:4px 0 0 0"></div>
+            <div style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-top:3px solid #4DBBFF;border-right:3px solid #4DBBFF;border-radius:0 4px 0 0"></div>
+            <div style="position:absolute;bottom:10px;left:10px;width:30px;height:30px;border-bottom:3px solid #4DBBFF;border-left:3px solid #4DBBFF;border-radius:0 0 0 4px"></div>
+            <div style="position:absolute;bottom:10px;right:10px;width:30px;height:30px;border-bottom:3px solid #4DBBFF;border-right:3px solid #4DBBFF;border-radius:0 0 4px 0"></div>
+            <div id="qrScanLine" style="position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,#4DBBFF,transparent);animation:scanline 2s linear infinite;top:50%"></div>
+          </div>
+        </div>
+        <div class="qr-scan-result" id="qrScanResult">📷 Se pornește camera...</div>
+        <button class="qr-scan-btn" onclick="stopQRScan()" id="qrStopBtn" style="display:none">⏹ Oprește camera</button>
+      </div>
+
     </div>
   </div>
 
@@ -843,7 +904,29 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
     </div>
   </div>
 
-  <!-- GENERIC CONFIRM MODAL -->
+  <!-- SETUP NUME — apare după PIN, prima configurare -->
+  <div id="name-app" style="position:absolute;inset:0;background:var(--t-bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:32px 28px;gap:18px;
+    opacity:0;pointer-events:none;transition:opacity 0.4s;z-index:51;">
+    <div style="font-size:64px">👤</div>
+    <div style="font-size:22px;font-weight:700;color:var(--t-text);text-align:center">Cum te cheamă?</div>
+    <div style="font-size:13px;color:var(--t-muted);text-align:center;line-height:1.7">Numele tău va apărea în chat-ul prietenilor tăi.<br>Poți folosi o poreclă dacă vrei.</div>
+    <input id="nameInput" type="text" maxlength="24"
+      placeholder="Numele sau porecla ta..."
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      oninput="nameTyped(this)"
+      style="width:100%;padding:16px;background:var(--t-surface);border:2px solid var(--t-border);
+        border-radius:14px;color:var(--t-text);font-size:18px;font-family:inherit;
+        text-align:center;outline:none;">
+    <div id="namePreview" style="font-size:12px;color:var(--t-muted);min-height:16px"></div>
+    <button id="nameOkBtn" onclick="confirmName()" disabled
+      style="width:100%;padding:14px;background:var(--t-primary);border:none;
+        border-radius:14px;color:white;font-size:15px;font-weight:600;cursor:pointer;
+        font-family:inherit;opacity:0.4;transition:opacity 0.2s">
+      Continuă →
+    </button>
+  </div>
+
   <div class="modal-ov" id="genericModal">
     <div class="modal-box">
       <div style="font-size:36px;text-align:center" id="genericIcon">⚠️</div>
@@ -863,7 +946,23 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
     </div>
   </div>
 
-  <!-- PAROLA SECRETA -->
+  <!-- PAROLA SECRETA — overlay peste chat, prima deschidere -->
+  <div id="secretOverlay" style="display:none;position:absolute;inset:0;background:var(--t-bg);z-index:90;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;gap:16px">
+    <div style="font-size:52px">🔑</div>
+    <div style="font-size:18px;font-weight:700;color:var(--t-text);text-align:center" id="secOvTitle">Parolă secretă</div>
+    <div style="font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7">Stabiliți această parolă <b style="color:var(--t-text)">față în față sau verbal</b> cu persoana cu care vorbești.<br><br>Nu se trimite nicăieri — rămâne doar pe telefonul tău.</div>
+    <input class="secret-input" id="secOvInput" type="password"
+      placeholder="Introduceți parola secretă..."
+      oninput="secOvTyped(this)"
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      style="width:100%">
+    <div id="secOvStrength" style="font-size:11px;min-height:16px;text-align:center"></div>
+    <button class="secret-btn" id="secOvBtn" onclick="secOvConfirm()" disabled style="width:100%">🔐 Intră în chat</button>
+    <div style="font-size:11px;color:var(--t-muted);text-align:center;background:rgba(255,180,0,0.05);border:0.5px solid rgba(255,180,0,0.2);padding:12px;border-radius:12px;line-height:1.7">⚠️ Amândoi trebuie să introduceți <b>exact aceeași parolă</b>.<br>Dacă diferă, mesajele nu se pot decripta.</div>
+    <button onclick="secOvSkip()" style="background:transparent;border:none;color:var(--t-muted);font-size:12px;cursor:pointer;padding:4px">Sari peste (risc mai mic) →</button>
+  </div>
+
+  <!-- PAROLA SECRETA din Setari — schimba parola unui contact -->
   <div id="secret-app">
     <div class="page-topbar">
       <span class="page-back" onclick="closePage('secret-app')">‹</span>
@@ -910,7 +1009,25 @@ updateHint();
 
 // Calculator engine state
 let _op=null, _op1=null, _waitOp2=false, _justEq=false, _lastOp=null, _lastN=null, _hasDot=false;
-function _calcReset(){cur='0';expr='';waitPct=false;_op=null;_op1=null;_waitOp2=false;_justEq=false;_lastOp=null;_lastN=null;_hasDot=false;}
+function _calcReset(){cur='0';expr='';waitPct=false;_op=null;_op1=null;_waitOp2=false;_justEq=false;_lastOp=null;_lastN=null;_hasDot=false; _highlightOp(null); _updateAC(); }
+
+function _highlightOp(op) {
+  const map = {'+':'op-add','-':'op-sub','*':'op-mul','/':'op-div'};
+  Object.values(map).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active-op');
+  });
+  if (op && map[op]) {
+    const el = document.getElementById(map[op]);
+    if (el) el.classList.add('active-op');
+  }
+}
+
+function _updateAC() {
+  const btn = document.getElementById('cbAC');
+  if (btn) btn.textContent = (cur !== '0' || expr !== '') ? 'C' : 'AC';
+}
+
 function _apply(a,op,b){switch(op){case'+':return a+b;case'-':return a-b;case'*':return a*b;case'/':return b===0?Infinity:a/b;}return b;}
 function _sym(op){return{'+':'+','-':'−','*':'×','/':'÷'}[op]||op;}
 function _fmtN(n){if(!isFinite(n)||isNaN(n))return'Eroare';return(Math.round(n*1e9)/1e9)+'';}
@@ -944,10 +1061,11 @@ function cp(v) {
   // ── Cifre 0-9 ──
   if (/^[0-9]$/.test(v)) {
     if (_justEq) { _calcReset(); }
-    if (_waitOp2) { cur=v; _waitOp2=false; _hasDot=false; }
+    if (_waitOp2) { cur=v; _waitOp2=false; _hasDot=false; _highlightOp(null); }
     else { if(cur==='0') cur=v; else if(cur.replace('-','').length<12) cur+=v; }
     _justEq=false;
     nEl.textContent=cur; fs(nEl,cur); nEl.className='calc-num';
+    _updateAC();
     if (storedHash && /^\d+$/.test(cur) && cur.length>=4 && !_op) {
       nEl.className='calc-num match'; hEl.textContent='apasă %'; hEl.className='calc-hint on';
     } else { updateHint(); }
@@ -987,7 +1105,9 @@ function cp(v) {
     } else { _op1=n; }
     _op=v; eEl.textContent=_fmtN(_op1)+' '+_sym(v);
     _waitOp2=true; _justEq=false; _hasDot=false;
-    nEl.className='calc-num'; updateHint(); return;
+    nEl.className='calc-num'; updateHint();
+    // iOS: highlight operator activ
+    _highlightOp(v); return;
   }
 
   // ── = ──
@@ -1007,7 +1127,7 @@ function cp(v) {
     cur=_fmtN(result); _op=null; _op1=result;
     _waitOp2=false; _justEq=true; _hasDot=cur.includes('.');
     eEl.textContent=exprStr; nEl.textContent=cur; fs(nEl,cur);
-    nEl.className='calc-num'; updateHint(); return;
+    nEl.className='calc-num'; updateHint(); _highlightOp(null); _updateAC(); return;
   }
 }
 
@@ -1031,9 +1151,52 @@ function fs(el, v) { const l=v.length; el.style.fontSize = l>10?'36px':l>7?'50px
 
 function showSetup() {
   pin = '';
-  document.getElementById('setup-app').classList.add('vis');
   document.getElementById('sb').className = 'status-bar sb-tirea';
-  rSetup();
+  if (localStorage.getItem('tirea_display_name')) {
+    // Dacă schimbă codul mai târziu → sare direct la PIN
+    document.getElementById('setup-app').classList.add('vis');
+    rSetup();
+  } else {
+    // Prima configurare → Nume primul
+    const nameApp = document.getElementById('name-app');
+    nameApp.style.opacity = '1';
+    nameApp.style.pointerEvents = 'all';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('nameOkBtn').disabled = true;
+    document.getElementById('nameOkBtn').style.opacity = '0.4';
+    document.getElementById('namePreview').textContent = '';
+    setTimeout(() => document.getElementById('nameInput').focus(), 200);
+  }
+}
+
+function nameTyped(inp) {
+  const v = inp.value.trim();
+  const btn = document.getElementById('nameOkBtn');
+  const preview = document.getElementById('namePreview');
+  const ok = v.length >= 2;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.4';
+  inp.style.borderColor = ok ? 'var(--t-primary)' : 'var(--t-border)';
+  preview.textContent = ok ? ('Vei apărea ca: ' + v) : (v.length === 1 ? 'Minim 2 caractere' : '');
+  preview.style.color = ok ? 'var(--t-green)' : '#FF4466';
+}
+
+function confirmName() {
+  const v = document.getElementById('nameInput').value.trim();
+  if (v.length < 2) return;
+  localStorage.setItem('tirea_display_name', v);
+  // Ascunde ecranul de nume → trece la PIN
+  const nameApp = document.getElementById('name-app');
+  nameApp.style.opacity = '0';
+  nameApp.style.pointerEvents = 'none';
+  setTimeout(() => {
+    document.getElementById('setup-app').classList.add('vis');
+    rSetup();
+  }, 350);
+}
+
+function showNameScreen() {
+  // păstrat pentru compatibilitate — nu mai e folosit
 }
 
 function sp(v) {
@@ -1065,6 +1228,7 @@ async function confirmSetup() {
   updateHint();
   setTimeout(() => unlock(), 300);
 }
+
 
 // ===== GENERIC MODAL (inlocuieste confirm/alert) =====
 let _genericCb = null;
@@ -1128,11 +1292,12 @@ function unlock() {
   const ov = document.getElementById('unlockOv');
   ov.classList.add('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
+  const myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
   setTimeout(() => {
     ov.classList.remove('show');
     document.getElementById('tirea-app').classList.add('vis');
     document.getElementById('calc-app').style.display = 'none';
-    startListening(); // porneste ascultarea Firebase
+    startListening();
   }, 1200);
   cur='0'; expr=''; waitPct=false;
   document.getElementById('cNum').textContent='0';
@@ -1141,6 +1306,13 @@ function unlock() {
   document.getElementById('cHint').textContent='';
   document.getElementById('profilId').textContent = localStorage.getItem('tirea_id') || '—';
   document.getElementById('profilCreated').textContent = localStorage.getItem('tirea_created') || '—';
+  // Afișează numele real în profil
+  const nameEl = document.querySelector('.profil-name');
+  if (nameEl) nameEl.textContent = myName;
+  const handleEl = document.getElementById('profilHandle');
+  if (handleEl) handleEl.textContent = '@' + myName.toLowerCase().replace(/\s+/g,'_');
+  loadContactsIntoList();
+  updateFriendCount();
 }
 
 function hideTirea() {
@@ -1148,9 +1320,92 @@ function hideTirea() {
   document.getElementById('tirea-app').classList.remove('vis');
   document.getElementById('calc-app').style.display = 'flex';
   document.getElementById('sb').className = 'status-bar sb-dark';
+  // Închide și secretOverlay dacă e deschis
+  document.getElementById('secretOverlay').style.display = 'none';
 }
 
-function closeAllPages() {
+// ===== SHAKE TO HIDE =====
+(function() {
+  const THRESHOLD = 18;   // accelerație minimă (m/s²) — mărește dacă se declanșează accidental
+  const COOLDOWN  = 2000; // ms între două shake-uri
+  let lastShake = 0;
+  let lastX = null, lastY = null, lastZ = null;
+
+  function onMotion(e) {
+    const acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    const { x, y, z } = acc;
+    if (lastX === null) { lastX = x; lastY = y; lastZ = z; return; }
+
+    const delta = Math.abs(x - lastX) + Math.abs(y - lastY) + Math.abs(z - lastZ);
+    lastX = x; lastY = y; lastZ = z;
+
+    if (delta > THRESHOLD) {
+      const now = Date.now();
+      if (now - lastShake < COOLDOWN) return;
+      lastShake = now;
+
+      // Acționează doar dacă Tirea e deschis
+      const tireaVis = document.getElementById('tirea-app').classList.contains('vis')
+        || document.getElementById('chat-app').classList.contains('vis')
+        || document.getElementById('secret-app').classList.contains('vis');
+      if (tireaVis) hideTirea();
+    }
+  }
+
+  // iOS 13+ necesită permisiune explicită
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    // Adaugă buton în Setări pentru activare
+    window._shakeNeedsPermission = true;
+  } else {
+    window.addEventListener('devicemotion', onMotion, true);
+  }
+
+  // Expunem funcția pentru butonul din Setări (iOS)
+  window.requestShakePermission = async function() {
+    try {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm === 'granted') {
+        window.addEventListener('devicemotion', onMotion, true);
+        window._shakeNeedsPermission = false;
+        // Actualizează butonul
+        const btn = document.getElementById('shakePermBtn');
+        if (btn) { btn.textContent = '✓ Shake activ'; btn.style.background = 'var(--t-green)'; }
+      }
+    } catch(e) {}
+  };
+})();
+
+
+function checkShakeBtn() {
+  const btn = document.getElementById('shakePermBtn');
+  if (window._shakeNeedsPermission) {
+    btn.textContent = '⏳ Activează...';
+    window.requestShakePermission();
+  } else {
+    // Android/desktop — deja activ, arată confirmare
+    btn.textContent = '✓ Activ';
+    btn.style.background = 'var(--t-green)';
+  }
+}
+
+// La deschiderea Setărilor — actualizează starea butonului shake
+function openSetari() {
+  document.getElementById('setari-app').classList.add('vis');
+  navTo('setari');
+  const btn = document.getElementById('shakePermBtn');
+  if (btn) {
+    if (window._shakeNeedsPermission) {
+      btn.textContent = '🔒 Activează (iOS)';
+      btn.style.background = 'var(--t-primary)';
+    } else {
+      btn.textContent = '✓ Activ';
+      btn.style.background = 'var(--t-green)';
+    }
+  }
+}
+
+
   ['profil-app','setari-app','chat-app'].forEach(id => document.getElementById(id).classList.remove('vis'));
   document.getElementById('calc-app').style.display = 'flex';
 }
@@ -1200,13 +1455,9 @@ function navTo(tab) {
 
 function openProfil() {
   document.getElementById('pMsgCount').textContent = msgCount;
+  updateFriendCount();
   document.getElementById('profil-app').classList.add('vis');
   navTo('profil');
-}
-
-function openSetari() {
-  document.getElementById('setari-app').classList.add('vis');
-  navTo('setari');
 }
 
 function closePage(id) {
@@ -1255,8 +1506,11 @@ function clearSearch() {
 const chatHistory = {}; // { 'Ana N.': [{html, isMe, time}], ... }
 let currentChatName = '';
 
-function openChat(name, initials) {
+function openChat(name, initials, peerId) {
   currentChatName = name;
+  currentChatInitials = initials;
+  currentChatPeerId = peerId || null;
+
   document.getElementById('chatName').textContent = name;
   document.getElementById('chatAv').textContent = initials;
   document.getElementById('msgInput').value = '';
@@ -1265,9 +1519,74 @@ function openChat(name, initials) {
   document.getElementById('chat-app').classList.add('vis');
   msgCount = 0;
 
-  // Restaurează mesajele salvate în memorie
+  // Verifică dacă există parolă secretă salvată pentru acest contact
+  const secretKey = 'tirea_secret_' + (peerId || name);
+  const savedSecret = localStorage.getItem(secretKey);
+
+  if (!savedSecret) {
+    // Prima dată — arată overlay parolă
+    showSecretOverlay(name, peerId, secretKey);
+    return;
+  }
+
+  // Parolă știută — intră direct în chat
+  sharedSecret = savedSecret;
+  _doChatOpen(name, initials, peerId);
+}
+
+let currentChatInitials = '';
+let currentChatPeerId = null;
+let _pendingSecretKey = null;
+
+function showSecretOverlay(name, peerId, secretKey) {
+  _pendingSecretKey = secretKey;
+  document.getElementById('secOvTitle').textContent = '🔑 Parolă pentru ' + name;
+  document.getElementById('secOvInput').value = '';
+  document.getElementById('secOvBtn').disabled = true;
+  document.getElementById('secOvStrength').textContent = '';
+  const ov = document.getElementById('secretOverlay');
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('secOvInput').focus(), 200);
+}
+
+function secOvTyped(inp) {
+  const v = inp.value;
+  const btn = document.getElementById('secOvBtn');
+  const str = document.getElementById('secOvStrength');
+  btn.disabled = v.length < 4;
+  if (!v.length) { str.textContent = ''; return; }
+  if (v.length < 4) { str.style.color = 'var(--t-red)'; str.textContent = 'Prea scurtă — minim 4 caractere'; }
+  else if (v.length < 8) { str.style.color = '#FFB400'; str.textContent = 'Acceptabilă'; }
+  else { str.style.color = 'var(--t-green)'; str.textContent = '✓ Parolă puternică'; }
+}
+
+function secOvConfirm() {
+  const v = document.getElementById('secOvInput').value;
+  if (v.length < 4) return;
+  // Salvează local
+  if (_pendingSecretKey) localStorage.setItem(_pendingSecretKey, v);
+  sharedSecret = v;
+  document.getElementById('secretOverlay').style.display = 'none';
+  _doChatOpen(currentChatName, currentChatInitials, currentChatPeerId);
+}
+
+function secOvSkip() {
+  // Salvează parola goală — nu va mai întreba
+  if (_pendingSecretKey) localStorage.setItem(_pendingSecretKey, '');
+  sharedSecret = '';
+  document.getElementById('secretOverlay').style.display = 'none';
+  _doChatOpen(currentChatName, currentChatInitials, currentChatPeerId);
+}
+
+function _doChatOpen(name, initials, peerId) {
   const msgs = document.getElementById('messages');
   msgs.innerHTML = '';
+
+  if (peerId) {
+    openFbChat(peerId, name);
+    return;
+  }
+
   if (chatHistory[name] && chatHistory[name].length > 0) {
     chatHistory[name].forEach(m => {
       const wrap = document.createElement('div');
@@ -1279,13 +1598,6 @@ function openChat(name, initials) {
     addSys('🔐 conversație restaurată · dispare la închidere app');
   } else {
     addSys('🔐 AES-256-GCM · mesajele dispar la închiderea app');
-    // Mesaj de salut automat doar la prima deschidere
-    const greetings = ['Salut! 👋','Hey! ce faci?','Bună! 😊'];
-    setTimeout(() => showTyping(), 700);
-    setTimeout(() => {
-      removeTyping();
-      addMsg(greetings[Math.floor(Math.random()*greetings.length)], false);
-    }, 1800);
   }
 }
 
@@ -1600,38 +1912,118 @@ function openAddFriend() {
 }
 
 // ── QR ──
+let qrScanActive = false;
+let qrStream = null;
+let qrScanInterval = null;
+let qrInstance = null;
+
 function openQR() {
   document.getElementById('qr-app').classList.add('vis');
+  qrTab('show');
   drawQR();
 }
 
+function closeQRApp() {
+  stopQRScan();
+  closePage('qr-app');
+}
+
+function qrTab(tab) {
+  document.getElementById('qr-tab-show').classList.toggle('active', tab === 'show');
+  document.getElementById('qr-tab-scan').classList.toggle('active', tab === 'scan');
+  document.getElementById('qr-show-panel').style.display = tab === 'show' ? 'flex' : 'none';
+  document.getElementById('qr-scan-panel').style.display = tab === 'scan' ? 'flex' : 'none';
+  if (tab === 'scan') startQRScan();
+  else stopQRScan();
+}
+
 function drawQR() {
-  const frame = document.getElementById('qrFrame');
-  document.getElementById('qrIdText').textContent = 'ID: ' + myTireaId;
-  // QR vizual simplu bazat pe ID
-  frame.innerHTML = '';
-  const seed = myTireaId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  for (let i=0;i<81;i++) {
-    const cell = document.createElement('div');
-    const r = (seed * (i+7) * 13 + i * 31) % 100;
-    const isBorder = i<9||i>71||i%9===0||i%9===8;
-    const isCorner = (i<3&&(i%9<3))||(i<3&&(i%9>5))||(i>70&&(i%9<3))||(i>70&&(i%9>5));
-    cell.style.cssText = 'background:' + ((r < 50 || isBorder) ? '#000' : '#fff') + ';border-radius:1px';
-    frame.appendChild(cell);
+  const container = document.getElementById('qrCanvas');
+  container.innerHTML = '';
+  document.getElementById('qrIdText').textContent = 'ID: ' + myUserId;
+  // QR real cu qrcode.js — conține userId pentru Firebase
+  try {
+    qrInstance = new QRCode(container, {
+      text: JSON.stringify({ tireaId: myUserId, name: localStorage.getItem('tirea_display_name') || 'Prieten' }),
+      width: 156, height: 156,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {
+    container.style.cssText += ';display:flex;align-items:center;justify-content:center;font-size:11px;color:#555;text-align:center';
+    container.textContent = 'QR indisponibil\n' + myUserId;
   }
 }
 
-function simulateScan() {
-  // Simulare scanare — în realitate ar folosi camera
-  const fakeId = 'TR' + Math.random().toString(36).substr(2,8).toUpperCase();
-  const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.','Vlad N.'][Math.floor(Math.random()*5)];
-  document.getElementById('qrScanResult').textContent = '✓ Găsit: ' + fakeName;
-  pendingFriend = { name: fakeName, id: fakeId };
-  setTimeout(() => {
-    document.getElementById('qrScanResult').textContent = '';
-    showConfirmAdd(fakeName, 'prin QR Code');
-  }, 800);
+async function startQRScan() {
+  const video = document.getElementById('qrVideo');
+  const result = document.getElementById('qrScanResult');
+  const stopBtn = document.getElementById('qrStopBtn');
+  result.textContent = '📷 Se pornește camera...';
+  result.style.color = 'var(--t-muted)';
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } }
+    });
+    video.srcObject = qrStream;
+    await video.play();
+    qrScanActive = true;
+    stopBtn.style.display = 'block';
+    result.textContent = '🔍 Caută QR...';
+    result.style.color = 'var(--t-muted)';
+    // Scanează frame-uri
+    qrScanInterval = setInterval(() => { if (qrScanActive) decodeQRFrame(); }, 300);
+  } catch(e) {
+    result.textContent = '✗ Nu s-a putut accesa camera. Verifică permisiunile.';
+    result.style.color = 'var(--t-red)';
+  }
 }
+
+function decodeQRFrame() {
+  const video = document.getElementById('qrVideo');
+  const canvas = document.getElementById('qrScanCanvas');
+  if (!video.videoWidth) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+  if (code) {
+    onQRDetected(code.data);
+  }
+}
+
+function onQRDetected(rawData) {
+  stopQRScan();
+  const result = document.getElementById('qrScanResult');
+  try {
+    const data = JSON.parse(rawData);
+    if (data.tireaId) {
+      result.textContent = '✓ QR detectat!';
+      result.style.color = 'var(--t-green)';
+      pendingFriend = { name: data.name || 'Prieten', id: data.tireaId };
+      setTimeout(() => showConfirmAdd(data.name || 'Prieten', 'prin QR Code'), 600);
+    } else {
+      result.textContent = '✗ QR-ul nu e de la Tirea';
+      result.style.color = 'var(--t-red)';
+    }
+  } catch(e) {
+    result.textContent = '✗ QR invalid';
+    result.style.color = 'var(--t-red)';
+  }
+}
+
+function stopQRScan() {
+  qrScanActive = false;
+  if (qrScanInterval) { clearInterval(qrScanInterval); qrScanInterval = null; }
+  if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  const video = document.getElementById('qrVideo');
+  if (video) video.srcObject = null;
+  const stopBtn = document.getElementById('qrStopBtn');
+  if (stopBtn) stopBtn.style.display = 'none';
+}
+
 
 // ── LINK ──
 function openLink() {
@@ -1643,12 +2035,16 @@ function generateLink() {
   const token = Math.random().toString(36).substr(2,16);
   activeLink = token;
   activeLinkExpiry = Date.now() + 24*60*60*1000;
-  const link = 'tirea://invite/' + myTireaId + '/' + token;
+  const link = 'tirea://invite/' + myUserId + '/' + token;
   document.getElementById('linkBox').textContent = link;
   document.getElementById('linkExpire').textContent = 'Expiră în 24 ore';
   document.getElementById('linkInput').value = '';
   document.getElementById('linkAcceptBtn').disabled = true;
   document.getElementById('linkStatus').textContent = '';
+  // Publică în Firebase cu numele tău real
+  const myName = localStorage.getItem('tirea_display_name') || 'Prieten';
+  db.ref('invites/' + myUserId).set({ name: myName, ts: Date.now() });
+  setTimeout(() => db.ref('invites/' + myUserId).remove(), 24*60*60*1000);
 }
 
 function copyLink() {
@@ -1677,11 +2073,21 @@ function acceptLink() {
     return;
   }
   const parts = v.split('/');
-  const fakeName = ['Ion P.','Cristina B.','Sorin L.','Alina D.'][Math.floor(Math.random()*4)];
-  document.getElementById('linkStatus').textContent = '✓ Link valid!';
+  const peerId = parts[4] || parts[3] || '';
+  if (!peerId) {
+    document.getElementById('linkStatus').textContent = '✗ Link corupt';
+    document.getElementById('linkStatus').style.color = 'var(--t-red)';
+    return;
+  }
+  document.getElementById('linkStatus').textContent = '✓ Link valid! Se conectează...';
   document.getElementById('linkStatus').style.color = 'var(--t-green)';
-  pendingFriend = { name: fakeName, id: parts[3] || 'TRUNKNOWN' };
-  setTimeout(() => showConfirmAdd(fakeName, 'prin link invitație'), 600);
+  // Trimite semnal Firebase ca să aflăm numele celuilalt
+  db.ref('invites/' + peerId).once('value', snap => {
+    const data = snap.val();
+    const peerName = (data && data.name) ? data.name : 'Prieten';
+    pendingFriend = { name: peerName, id: peerId };
+    setTimeout(() => showConfirmAdd(peerName, 'prin link invitație'), 400);
+  });
 }
 
 // ── PIN ──
@@ -1723,17 +2129,19 @@ function acceptPIN() {
   const entered = document.getElementById('afPinInput').value;
   const st = document.getElementById('afPinStatus');
   if (!activePIN) {
-    // Nu există PIN generat de nimeni — simulăm găsire
-    const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.'][Math.floor(Math.random()*4)];
-    pendingFriend = { name: fakeName, id: 'TR'+entered };
-    showConfirmAdd(fakeName, 'prin PIN ' + entered);
+    st.textContent = '✗ Niciun PIN activ. Prietenul trebuie să genereze un PIN mai întâi.';
+    st.style.color = 'var(--t-red)';
     return;
   }
   if (entered === activePIN && Date.now() < activePINExpiry) {
     st.textContent = '✓ PIN valid!'; st.style.color = 'var(--t-green)';
-    const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.'][Math.floor(Math.random()*4)];
-    pendingFriend = { name: fakeName, id: 'TR'+entered };
-    setTimeout(() => showConfirmAdd(fakeName, 'prin PIN'), 500);
+    // pendingFriend setat deja de cel care a generat PIN-ul via Firebase
+    // dacă nu e setat, arătăm eroare
+    if (!pendingFriend) {
+      st.textContent = '✓ PIN corect — așteptăm confirmarea prietenului';
+      return;
+    }
+    setTimeout(() => showConfirmAdd(pendingFriend.name, 'prin PIN'), 500);
   } else {
     st.textContent = '✗ PIN invalid sau expirat'; st.style.color = 'var(--t-red)';
     document.getElementById('afPinInput').value = '';
@@ -1755,15 +2163,13 @@ function closeConfirm() {
 
 function confirmAddFriend() {
   if (!pendingFriend) return;
-  const { name } = pendingFriend;
+  const { name, id } = pendingFriend;
   const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  addContactToList(name, initials);
+  addContactToList(name, initials, id);
   closeConfirm();
-  // Închidem toate ecranele de adăugare
   ['addfriend-app','qr-app','link-app','pin-app'].forEach(id => closePage(id));
   document.getElementById('afPinInput').value = '';
   pendingFriend = null;
-  // Mesaj de confirmare vizual
   setTimeout(() => {
     const st = document.createElement('div');
     st.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:#00C896;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap';
@@ -1774,23 +2180,62 @@ function confirmAddFriend() {
 }
 
 function addContact() {
-  // fallback pentru compatibilitate
   const name = (document.getElementById('newContactName') || {value:''}).value.trim();
   if (!name) return;
   const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  addContactToList(name, initials);
+  addContactToList(name, initials, 'LOCAL_' + Date.now());
 }
 
-function addContactToList(name, initials) {
+function addContactToList(name, initials, peerId) {
+  // Salvează în localStorage
+  const contacts = loadContacts();
+  // evita duplicate
+  if (contacts.find(c => c.id === peerId)) return;
+  contacts.push({ name, initials, id: peerId, addedAt: Date.now() });
+  saveContacts(contacts);
+  renderContactInList({ name, initials, id: peerId });
+  updateFriendCount();
+}
+
+function renderContactInList(c) {
   const list = document.getElementById('convList');
+  const noContacts = document.getElementById('noContacts');
+  if (noContacts) noContacts.style.display = 'none';
   const div = document.createElement('div');
   div.className = 't-conv contact-item';
-  div.setAttribute('data-name', name.toLowerCase());
-  div.onclick = () => openChat(name, initials);
-  div.innerHTML = '<div class="t-av">'+esc(initials)+'</div>'
-    + '<div class="t-conv-info"><div class="t-cname">'+esc(name)+'</div><div class="t-cprev">—</div></div>'
-    + '<div class="t-meta"><span class="t-time">—</span></div>';
+  div.setAttribute('data-name', c.name.toLowerCase());
+  div.setAttribute('data-id', c.id);
+  div.onclick = () => openChat(c.name, c.initials, c.id);
+  div.innerHTML = '<div class="t-av">'+esc(c.initials)+'</div>'
+    + '<div class="t-conv-info"><div class="t-cname">'+esc(c.name)+'</div><div class="t-cprev" id="prev-'+c.id+'">—</div></div>'
+    + '<div class="t-meta"><span class="t-time" id="time-'+c.id+'">—</span></div>';
   list.insertBefore(div, document.getElementById('noResults'));
+}
+
+function loadContacts() {
+  try { return JSON.parse(localStorage.getItem('tirea_contacts') || '[]'); } catch(e) { return []; }
+}
+
+function saveContacts(arr) {
+  localStorage.setItem('tirea_contacts', JSON.stringify(arr));
+}
+
+function loadContactsIntoList() {
+  const contacts = loadContacts();
+  const noContacts = document.getElementById('noContacts');
+  if (contacts.length === 0) {
+    if (noContacts) noContacts.style.display = 'flex';
+    return;
+  }
+  if (noContacts) noContacts.style.display = 'none';
+  contacts.forEach(c => renderContactInList(c));
+  updateFriendCount();
+}
+
+function updateFriendCount() {
+  const n = loadContacts().length;
+  const el = document.getElementById('pFriendCount');
+  if (el) el.textContent = n;
 }
 
 // ===== PAROLA SECRETA =====
@@ -1821,17 +2266,41 @@ function secretTyped(inp) {
   else { str.style.color='#00C896'; str.textContent = '✓ Parolă puternică'; }
 }
 
+function openSecretScreen() {
+  document.getElementById('secret-app').classList.add('vis');
+  const inp = document.getElementById('secretInput');
+  inp.value = '';
+  document.getElementById('secretBtn').disabled = true;
+  document.getElementById('secretStrength').textContent = '';
+  const cur = document.getElementById('secretCurrent');
+  // Arată parola activă pentru contactul curent (dacă e în chat)
+  const key = 'tirea_secret_' + (currentChatPeerId || currentChatName || '');
+  const saved = key ? localStorage.getItem(key) : null;
+  if (saved) {
+    cur.textContent = '✓ Parolă activă pentru acest contact 🔐';
+    cur.style.color = '#00C896';
+  } else if (sharedSecret) {
+    cur.textContent = '✓ Parolă activă (sesiune curentă) 🔐';
+    cur.style.color = '#00C896';
+  } else {
+    cur.textContent = '⚠️ Nicio parolă setată pentru contactul curent';
+    cur.style.color = '#FFB400';
+  }
+}
+
 function confirmSecret() {
   const v = document.getElementById('secretInput').value;
   if (v.length < 4) return;
   sharedSecret = v;
+  // Salvează local pentru contactul curent
+  const key = 'tirea_secret_' + (currentChatPeerId || currentChatName || '');
+  if (key) localStorage.setItem(key, v);
   document.getElementById('secretInput').value = '';
   const cur = document.getElementById('secretCurrent');
-  cur.textContent = '✓ Parolă setată! Chat-ul e acum protejat maxim 🔐';
+  cur.textContent = '✓ Parolă actualizată! 🔐';
   cur.style.color = '#00C896';
   document.getElementById('secretBtn').disabled = true;
-  // Arata confirmare si inchide
-  setTimeout(() => closePage('secret-app'), 1500);
+  setTimeout(() => closePage('secret-app'), 1200);
 }
 
 // Parola secreta — buton in setari
@@ -1943,6 +2412,15 @@ function openFbChat(peerId, peerName) {
   fbPeerId = peerId;
   if (fbChatRef && fbChatListener) fbChatRef.off('child_added', fbChatListener);
   currentChatName = peerName;
+  currentChatPeerId = peerId;
+
+  // Încarcă parola secretă salvată pentru acest peer
+  const secretKey = 'tirea_secret_' + peerId;
+  const savedSecret = localStorage.getItem(secretKey);
+  if (savedSecret !== null) {
+    sharedSecret = savedSecret; // poate fi '' dacă a ales skip
+  }
+  // Dacă vine din acceptSignal (fără openChat), arată UI-ul corect
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
