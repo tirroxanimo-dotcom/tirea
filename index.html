@@ -288,7 +288,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #0a0a
 .td { width: 7px; height: 7px; background: #0052FF; border-radius: 50%; animation: tdot 1.2s infinite; }
 .td:nth-child(2) { animation-delay: 0.2s; }
 .td:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
 @keyframes scanline { 0%{top:10px} 100%{top:calc(100% - 12px)} }
+.disc-ov { position: absolute; inset: 0; background: rgba(255,255,255,0.97); display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 20; }
 .disc-ov.show { display: flex; }
 .disc-icon { font-size: 52px; }
@@ -1406,6 +1408,7 @@ function openSetari() {
 }
 
 
+function closeAllPages() {
   ['profil-app','setari-app','chat-app'].forEach(id => document.getElementById(id).classList.remove('vis'));
   document.getElementById('calc-app').style.display = 'flex';
 }
@@ -2239,22 +2242,6 @@ function updateFriendCount() {
 }
 
 // ===== PAROLA SECRETA =====
-function openSecretScreen() {
-  document.getElementById('secret-app').classList.add('vis');
-  const inp = document.getElementById('secretInput');
-  inp.value = '';
-  document.getElementById('secretBtn').disabled = true;
-  document.getElementById('secretStrength').textContent = '';
-  const cur = document.getElementById('secretCurrent');
-  if (sharedSecret) {
-    cur.textContent = '✓ Parolă activă — chat-ul e protejat maxim 🔐';
-    cur.style.color = '#00C896';
-  } else {
-    cur.textContent = '⚠️ Nicio parolă setată — risc mediu';
-    cur.style.color = '#FFB400';
-  }
-}
-
 function secretTyped(inp) {
   const v = inp.value;
   const btn = document.getElementById('secretBtn');
