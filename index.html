@@ -2019,6 +2019,31 @@ function callFriend(peerId, peerName) {
   addSys('📡 Semnal trimis — așteptăm răspuns...');
 }
 
+
+// SHAKE TO PANIC — scutura telefonul sa inchida Tirea
+(function() {
+  var threshold = 25;
+  var lastX = null, lastY = null, lastZ = null;
+  var lastTime = 0;
+  window.addEventListener('devicemotion', function(e) {
+    var acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    var now = Date.now();
+    if (now - lastTime < 100) return;
+    lastTime = now;
+    if (lastX === null) { lastX = acc.x; lastY = acc.y; lastZ = acc.z; return; }
+    var dx = Math.abs(acc.x - lastX);
+    var dy = Math.abs(acc.y - lastY);
+    var dz = Math.abs(acc.z - lastZ);
+    lastX = acc.x; lastY = acc.y; lastZ = acc.z;
+    if (dx + dy + dz > threshold) {
+      // Doar daca Tirea e deschis
+      if (document.getElementById('tirea-app').classList.contains('vis')) {
+        hideTirea();
+      }
+    }
+  });
+})();
 </script>
 
 </body>
