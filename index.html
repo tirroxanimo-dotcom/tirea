@@ -32,7 +32,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 36px; display: flex;
   align-items: center; justify-content: space-between; padding: 0 22px; z-index: 100; font-size: 12px; font-weight: 600; }
 .sb-dark  { color: #1a1a1a; background: var(--s-bg); }
-.sb-tirea { color: var(--t-text); background: var(--t-bg); }
+.sb-tirea { color: #f0f0f0; background: #2a2a2a; }
 .status-time { font-size: 13px; font-weight: 700; }
 .status-icons { display: flex; gap: 4px; font-size: 11px; }
 
@@ -252,7 +252,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   outline: none; border-radius: 34px; }
 #chat-app.vis { opacity: 1; pointer-events: all; transform: translateX(0); }
 .chat-topbar { padding: 42px 14px 10px; display: flex; align-items: center; gap: 10px;
-  border-bottom: 2px solid #ffffff; flex-shrink: 0; background: #fff; }
+  border-bottom: 1px solid #444; flex-shrink: 0; background: #2a2a2a; }
 .back-btn { color: #ffffff; font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; }
 .chat-peer-av { width: 38px; height: 38px; border-radius: 50%; background: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
@@ -267,9 +267,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
 .chat-act-btn:active { background: #ffffff; color: #fff; }
 .enc-bar { padding: 5px 16px; background: #333; border-bottom: 1px solid #444;
-  font-size: 10px; color: #888; flex-shrink: 0; font-family: monospace; opacity: 0.7; }
+  font-size: 10px; color: #888; flex-shrink: 0; font-family: monospace; }
 .messages { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px;
-  overflow-y: auto; background: #fff; scroll-behavior: smooth; }
+  overflow-y: auto; background: #2a2a2a; scroll-behavior: smooth; }
 .messages::-webkit-scrollbar { width: 2px; }
 .messages::-webkit-scrollbar-thumb { background: #ffffff; border-radius: 2px; opacity: 0.3; }
 .msg-wrap { display: flex; flex-direction: column; }
@@ -290,9 +290,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .send-btn { width: 42px; height: 42px; background: #f0f0f0; border: none; border-radius: 50%;
   cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
 .send-btn:active { opacity: 0.8; transform: scale(0.93); }
-.typing-bubble { background: #f0f4ff; border: 2px solid #ffffff; border-radius: 20px;
+.typing-bubble { background: #3d3d3d; border: none; border-radius: 20px;
   border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; opacity:0.7; }
-.td { width: 7px; height: 7px; background: #ffffff; border-radius: 50%; animation: tdot 1.2s infinite; }
+.td { width: 7px; height: 7px; background: #888; border-radius: 50%; animation: tdot 1.2s infinite; }
 .td:nth-child(2) { animation-delay: 0.2s; }
 .td:nth-child(3) { animation-delay: 0.4s; }
 @keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
@@ -571,6 +571,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div class="t-section" id="convLabel" style="padding-top:2px"></div>
     <div class="t-conv-list" id="convList">
 
+        <div class="t-conv-info"><div class="t-cname">Ioana P.</div></div>
+      </div>
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
@@ -920,6 +922,30 @@ function scalePhone() {
 window.addEventListener('resize', scalePhone);
 document.addEventListener('DOMContentLoaded', scalePhone);
 
+// SHAKE TO HIDE — scutura sa ascunda Tirea
+(function() {
+  var THRESH = 20, last = 0, lx = null, ly = null, lz = null;
+  function req() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().catch(function(){});
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', req, { once: true });
+  });
+  window.addEventListener('devicemotion', function(e) {
+    var a = e.accelerationIncludingGravity; if (!a) return;
+    var now = Date.now(); if (now - last < 80) return; last = now;
+    if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
+    var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
+    lx=a.x; ly=a.y; lz=a.z;
+    if (d > THRESH) {
+      var t = document.getElementById('tirea-app');
+      if (t && t.classList.contains('vis')) hideTirea();
+    }
+  });
+})();
+
 let storedHash = localStorage.getItem('tirea_hash') || null;
 let cur = '0', expr = '', waitPct = false, ghostOn = false, pin = '', msgCount = 0;
 
@@ -1226,13 +1252,10 @@ function navTo(tab) {
     if(el) el.classList.toggle('active', t === tab);
   });
   if (tab === 'chat') {
-    // Inchide toate sub-ecranele, ramane hub-ul principal vizibil
-    ['profil-app','setari-app','addfriend-app','qr-app','link-app','pin-app','chat-app','p2p-app','secret-app'].forEach(id => {
+    ['profil-app','setari-app','addfriend-app','qr-app','link-app','pin-app'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.classList.remove('vis');
     });
-    // Asigura ca tirea-app e vizibil
-    document.getElementById('tirea-app').classList.add('vis');
   }
 }
 
@@ -2019,31 +2042,6 @@ function callFriend(peerId, peerName) {
   addSys('📡 Semnal trimis — așteptăm răspuns...');
 }
 
-
-// SHAKE TO PANIC — scutura telefonul sa inchida Tirea
-(function() {
-  var threshold = 25;
-  var lastX = null, lastY = null, lastZ = null;
-  var lastTime = 0;
-  window.addEventListener('devicemotion', function(e) {
-    var acc = e.accelerationIncludingGravity;
-    if (!acc) return;
-    var now = Date.now();
-    if (now - lastTime < 100) return;
-    lastTime = now;
-    if (lastX === null) { lastX = acc.x; lastY = acc.y; lastZ = acc.z; return; }
-    var dx = Math.abs(acc.x - lastX);
-    var dy = Math.abs(acc.y - lastY);
-    var dz = Math.abs(acc.z - lastZ);
-    lastX = acc.x; lastY = acc.y; lastZ = acc.z;
-    if (dx + dy + dz > threshold) {
-      // Doar daca Tirea e deschis
-      if (document.getElementById('tirea-app').classList.contains('vis')) {
-        hideTirea();
-      }
-    }
-  });
-})();
 </script>
 
 </body>
