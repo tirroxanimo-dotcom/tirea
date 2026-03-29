@@ -279,6 +279,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .me   .bubble { background: #f0f0f0; color: #111; border-bottom-right-radius: 4px; border: none; }
 .them .bubble { background: #3d3d3d; color: #f0f0f0; border-bottom-left-radius: 4px; border: none; }
 .msg-meta { font-size: 10px; color: #999; margin-top: 3px; padding: 0 4px; }
+.msg-enc { font-size: 9px; color: #555; font-family: monospace; margin-top: 2px; padding: 0 4px; word-break: break-all; max-height: 32px; overflow: hidden; opacity: 0.7; }
 .sys-msg { text-align: center; font-size: 10px; color: #888; background: #333;
   padding: 5px 14px; border-radius: 20px; align-self: center; font-family: monospace; border: 1px solid #444; }
 .chat-input-area { padding: 10px 14px 28px; border-top: 1px solid #444; background: #2a2a2a;
@@ -447,6 +448,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   border-radius:12px;color:var(--t-text);font-size:14px;cursor:pointer;font-family:inherit; }
 .pin-note { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="phone"><div class="screen">
@@ -816,7 +819,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <div style="font-size:12px;color:var(--t-muted);text-align:center;padding:10px;background:var(--t-surface);border-radius:12px;line-height:1.6;">📷 Scanarea QR necesită o aplicație nativă.<br>Trimite-i prietenului <b>ID-ul tău</b> sau folosește <b>PIN</b> / <b>Link</b>.</div>
+      <input type="file" id="qrCameraInput" accept="image/*" capture="environment" style="display:none" onchange="readQRFromImage(this)">
+      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează QR</button>
+      <div class="qr-scan-result" id="qrScanResult"></div>
       <div class="qr-scan-result" id="qrScanResult"></div>
     </div>
   </div>
@@ -1199,6 +1204,7 @@ function unlock() {
   document.getElementById('cHint').textContent='';
   document.getElementById('profilId').textContent = localStorage.getItem('tirea_id') || '—';
   document.getElementById('profilCreated').textContent = localStorage.getItem('tirea_created') || '—';
+  loadSavedContacts();
 }
 
 function hideTirea() {
@@ -1543,18 +1549,22 @@ function sendMsg() {
   if (!text) return;
   inp.value = ''; inp.style.height = 'auto';
   msgCount++;
-  // Daca e chat Firebase activ — trimite real
   if (fbPeerId && fbChatRef) {
-    sendFbMsg(text);
+    sendFbMsgWithPreview(text);
     return;
   }
-  // Altfel normal/simulat
   addMsg(text, true);
   if (p2pActive && dc && dc.readyState === 'open') {
     dc.send(JSON.stringify({ text }));
-    return;
   }
+}
 
+async function sendFbMsgWithPreview(text) {
+  // Arata mesajul normal + versiunea criptata
+  const encrypted = await encMsg(text, fbPeerId);
+  addMsgWithEnc(text, encrypted, true);
+  // Trimite in Firebase
+  fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
 }
 
 const autoReplies = ['👍','ok!','înțeles 😊','da, sigur!','haha 😄','serios?','mișto!','și eu cred același lucru','💯','chiar așa!','hai!','perfect 🔐'];
@@ -1572,11 +1582,25 @@ function addMsg(text, isMe) {
   wrap.innerHTML = html;
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
-  // Salvează în memorie
   if (currentChatName) {
     if (!chatHistory[currentChatName]) chatHistory[currentChatName] = [];
     chatHistory[currentChatName].push({ html, isMe });
   }
+}
+
+function addMsgWithEnc(text, encrypted, isMe) {
+  const msgs = document.getElementById('messages');
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+  const check = isMe ? (readReceipt ? ' ✓✓' : '') : '';
+  const encPreview = encrypted.substring(0, 40) + '...';
+  wrap.innerHTML = '<div class="bubble">'+esc(text)+'</div>'
+    + '<div class="msg-enc">🔒 '+esc(encPreview)+'</div>'
+    + '<div class="msg-meta">'+t+' 🔐'+check+'</div>';
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 function addSys(text) {
@@ -1651,21 +1675,72 @@ function openQR() {
 
 function drawQR() {
   const frame = document.getElementById('qrFrame');
-  document.getElementById('qrIdText').textContent = 'ID: ' + myTireaId;
-  // QR vizual simplu bazat pe ID
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  const qrData = myUserId + '|' + displayName;
+  document.getElementById('qrIdText').textContent = 'ID: ' + myUserId;
+  // Genereaza QR real cu qrcode.js
   frame.innerHTML = '';
-  const seed = myTireaId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  for (let i=0;i<81;i++) {
-    const cell = document.createElement('div');
-    const r = (seed * (i+7) * 13 + i * 31) % 100;
-    const isBorder = i<9||i>71||i%9===0||i%9===8;
-    const isCorner = (i<3&&(i%9<3))||(i<3&&(i%9>5))||(i>70&&(i%9<3))||(i>70&&(i%9>5));
-    cell.style.cssText = 'background:' + ((r < 50 || isBorder) ? '#000' : '#fff') + ';border-radius:1px';
-    frame.appendChild(cell);
+  frame.style.cssText = 'width:180px;height:180px;background:white;border-radius:16px;padding:8px;display:flex;align-items:center;justify-content:center';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(frame, { text: qrData, width: 160, height: 160, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  } else {
+    frame.innerHTML = '<div style="font-size:11px;color:#999;text-align:center">QR indisponibil.<br>Folosește PIN sau Link.</div>';
   }
 }
 
-function simulateScan() { /* dezactivat */ }
+function simulateScan() { document.getElementById('qrCameraInput').click(); }
+
+function readQRFromImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const res = document.getElementById('qrScanResult');
+  res.textContent = '⏳ Se procesează...';
+  res.style.color = 'var(--t-muted)';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (typeof jsQR === 'undefined') {
+        res.textContent = '✗ Librăria QR nu e încărcată';
+        res.style.color = 'var(--t-red)';
+        return;
+      }
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) {
+        const parts = code.data.split('|');
+        const peerId = parts[0];
+        const peerName = parts[1] || 'Prieten';
+        res.textContent = '✓ ' + peerName + ' — se conectează...';
+        res.style.color = 'var(--t-green)';
+        // Trimite semnal prin Firebase si deschide chat direct
+        const myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+        db.ref('signals/' + peerId).set({
+          from: myUserId,
+          fromName: myName,
+          ts: Date.now()
+        });
+        // Adauga in lista de contacte si deschide chat
+        addContactToList(peerName, peerId);
+        setTimeout(() => {
+          closePage('qr-app');
+          closePage('addfriend-app');
+          openFbChat(peerId, peerName);
+        }, 800);
+      } else {
+        res.textContent = '✗ Nu s-a putut citi codul QR';
+        res.style.color = 'var(--t-red)';
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
 
 // ── LINK ──
 function openLink() {
@@ -1796,9 +1871,8 @@ function closeConfirm() {
 
 function confirmAddFriend() {
   if (!pendingFriend) return;
-  const { name } = pendingFriend;
-  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  addContactToList(name, initials);
+  const { name, id } = pendingFriend;
+  addContactToList(name, id);
   closeConfirm();
   // Închidem toate ecranele de adăugare
   ['addfriend-app','qr-app','link-app','pin-app'].forEach(id => closePage(id));
@@ -1822,16 +1896,32 @@ function addContact() {
   addContactToList(name, initials);
 }
 
-function addContactToList(name, initials) {
+function addContactToList(name, peerId) {
+  // Verifica sa nu existe deja
+  const existing = document.querySelector('[data-peerid="'+peerId+'"]');
+  if (existing) return;
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   const list = document.getElementById('convList');
   const div = document.createElement('div');
   div.className = 't-conv contact-item';
   div.setAttribute('data-name', name.toLowerCase());
-  div.onclick = () => openChat(name, initials);
+  div.setAttribute('data-peerid', peerId);
+  div.onclick = () => openFbChat(peerId, name);
   div.innerHTML = '<div class="t-av">'+esc(initials)+'</div>'
-    + '<div class="t-conv-info"><div class="t-cname">'+esc(name)+'</div><div class="t-cprev">—</div></div>'
-    + '<div class="t-meta"><span class="t-time">—</span></div>';
+    + '<div class="t-conv-info"><div class="t-cname">'+esc(name)+'</div><div class="t-cprev">Apasă pentru chat</div></div>'
+    + '<div class="t-meta"><span class="t-time">nou</span></div>';
   list.insertBefore(div, document.getElementById('noResults'));
+  // Salveaza in localStorage
+  const contacts = JSON.parse(localStorage.getItem('tirea_contacts') || '[]');
+  if (!contacts.find(c => c.id === peerId)) {
+    contacts.push({ name, id: peerId });
+    localStorage.setItem('tirea_contacts', JSON.stringify(contacts));
+  }
+}
+
+function loadSavedContacts() {
+  const contacts = JSON.parse(localStorage.getItem('tirea_contacts') || '[]');
+  contacts.forEach(c => addContactToList(c.name, c.id));
 }
 
 // ===== PAROLA SECRETA =====
@@ -2021,7 +2111,6 @@ async function sendFbMsg(text) {
   if (!fbPeerId || !fbChatRef) return false;
   const encrypted = await encMsg(text, fbPeerId);
   fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
-  setTimeout(() => fbChatRef.remove(), 24*60*60*1000);
   return true;
 }
 
