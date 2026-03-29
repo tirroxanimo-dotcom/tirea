@@ -31,18 +31,18 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
 .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 36px; display: flex;
   align-items: center; justify-content: space-between; padding: 0 22px; z-index: 100; font-size: 12px; font-weight: 600; }
-.sb-dark  { color: #1a1a1a; background: var(--s-bg); }
+.sb-dark  { color: #111111; background: #f0f0f0; }
 .sb-tirea { color: #f0f0f0; background: #2a2a2a; }
 .status-time { font-size: 13px; font-weight: 700; }
 .status-icons { display: flex; gap: 4px; font-size: 11px; }
 
 /* CALCULATOR — Samsung One UI style */
-#calc-app { position: absolute; inset: 0; background: var(--s-bg); display: flex; flex-direction: column; z-index: 1; }
+#calc-app { position: absolute; inset: 0; background: #f0f0f0; display: flex; flex-direction: column; z-index: 1; }
 .calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 28px 8px; }
-.calc-expr { font-size: 17px; color: #999; text-align: right; min-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
-.calc-num  { font-size: 64px; font-weight: 300; color: #1a1a1a; text-align: right; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.2s; }
-.calc-num.match { color: #1a1a1a; }
-.calc-hint { font-size: 11px; color: #bbb; text-align: right; height: 16px; margin-top: 2px; }
+.calc-expr { font-size: 17px; color: #777; text-align: right; min-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+.calc-num  { font-size: 64px; font-weight: 300; color: #111111; text-align: right; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.2s; }
+.calc-num.match { color: #111111; }
+.calc-hint { font-size: 11px; color: #888; text-align: right; height: 16px; margin-top: 2px; }
 .calc-hint.on { color: var(--s-eq); animation: hblink 0.9s infinite; }
 @keyframes hblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
@@ -95,7 +95,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   color: var(--t-text); font-size: 22px; cursor: pointer; transition: background 0.1s, transform 0.1s; }
 .pp:active { background: var(--t-primary); transform: scale(0.94); }
 .pp.del { background: transparent; color: var(--t-muted); font-size: 16px; }
-.pp.ok  { background: var(--t-primary); color: white; font-size: 14px; font-weight: 600; }
+.pp.ok  { background: #1a1a1a; color: #ffffff; font-size: 14px; font-weight: 600; }
 .pp.ok:disabled { background: var(--t-surface); color: var(--t-muted); cursor: not-allowed; }
 .formula-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.3);
   border-radius: 16px; padding: 14px; text-align: center; }
@@ -570,13 +570,10 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     </div>
     <div class="t-section" id="convLabel" style="padding-top:2px"></div>
     <div class="t-conv-list" id="convList">
-
-        <div class="t-conv-info"><div class="t-cname">Ioana P.</div></div>
-      </div>
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
-      <button class="t-nav-item active" id="nav-chat" onclick="openAddFriend()"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
+      <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
       <button class="t-nav-item" id="nav-profil" onclick="openProfil()"><span class="t-nav-icon">👤</span><div class="t-nav-label">Profil</div></button>
       <button class="t-nav-item" id="nav-setari" onclick="openSetari()"><span class="t-nav-icon">⚙️</span><div class="t-nav-label">Setări</div></button>
     </div>
