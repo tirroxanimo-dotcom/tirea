@@ -10,123 +10,115 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
 :root {
-  /* Tirea — tema alba/gri profesionala */
-  --t-primary: #ffffff;
-  --t-light: #cccccc;
-  --t-bg: #2a2a2a;
-  --t-surface: #333333;
-  --t-surface2: #3d3d3d;
-  --t-text: #f0f0f0;
-  --t-muted: #999999;
-  --t-border: #444444;
-  --t-green: #4caf50;
+  --t-primary: #ffffff; --t-light: #cccccc; --t-bg: #2a2a2a;
+  --t-surface: #333333; --t-surface2: #3d3d3d; --t-text: #f0f0f0;
+  --t-muted: #999999; --t-border: #444444; --t-green: #4caf50;
   --t-red: #ef5350;
-  /* Calculator */
-  --s-bg: #f9f9f9;
-  --s-eq: #1a1a1a;
+  --s-bg: #f0f0f0; --s-num: #e8e8e8; --s-func: #d8d8d8;
+  --s-op: #5a5a5a; --s-eq: #34c759; --s-op-text: #ffffff;
+  --s-text: #1a1a1a; --s-func-text: #3a3a3a;
 }
 body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; margin: 0; }
 
 .phone { width: 360px; height: 780px; position: relative; overflow: hidden; border-radius: 44px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.3);
-  background: #2a2a2a;
-  transform-origin: center center;
-  flex-shrink: 0;
+  box-shadow: 0 0 0 1px #1a1a1a, 0 40px 100px rgba(0,0,0,0.95); background: #f0f0f0;
+  transform-origin: center center; flex-shrink: 0; }
+@media (max-width: 480px) {
+  body { background: #f0f0f0; align-items: flex-start; }
+  .phone { width: 100vw !important; height: 100vh !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important; margin: 0 !important; }
 }
 .screen { width: 100%; height: 100%; position: relative; overflow: hidden; }
 
-/* PE TELEFON — ocupa tot ecranul, fara rama */
-@media (max-width: 480px) {
-  body { background: #2a2a2a; align-items: flex-start; }
-  .phone { width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; transform: none !important; margin: 0 !important; }
-  .screen { border-radius: 0; }
-}
-
 .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 36px; display: flex;
   align-items: center; justify-content: space-between; padding: 0 22px; z-index: 100; font-size: 12px; font-weight: 600; }
-.sb-dark  { color: #1a1a1a; background: #f0f0f0; }
-.sb-tirea { color: #f0f0f0; background: #2a2a2a; border-bottom: 1px solid #444; }
-.status-time { font-size: 13px; font-weight: 700; color: #111; }
-.status-icons { display: flex; gap: 4px; font-size: 11px; color: #555; }
+.sb-dark  { color: #1a1a1a; background: var(--s-bg); }
+.sb-tirea { color: var(--t-text); background: var(--t-bg); }
+.status-time { font-size: 13px; font-weight: 700; }
+.status-icons { display: flex; gap: 4px; font-size: 11px; }
 
-/* CALCULATOR — Samsung One UI original */
-#calc-app { position: absolute; inset: 0; background: #f0f0f0; display: flex; flex-direction: column; z-index: 1; }
+/* CALCULATOR — Samsung One UI style */
+#calc-app { position: absolute; inset: 0; background: var(--s-bg); display: flex; flex-direction: column; z-index: 1; }
 .calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 28px 8px; }
 .calc-expr { font-size: 17px; color: #999; text-align: right; min-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
 .calc-num  { font-size: 64px; font-weight: 300; color: #1a1a1a; text-align: right; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.2s; }
 .calc-num.match { color: #1a1a1a; }
 .calc-hint { font-size: 11px; color: #bbb; text-align: right; height: 16px; margin-top: 2px; }
-.calc-hint.on { color: #34c759; animation: hblink 0.9s infinite; }
+.calc-hint.on { color: var(--s-eq); animation: hblink 0.9s infinite; }
 @keyframes hblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
 /* Samsung toolbar row */
-.calc-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 4px; background: #f0f0f0; border-top: 1px solid #ddd; }
+.calc-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 4px; background: var(--s-bg); border-top: 1px solid #ddd; }
 .calc-tb-icons { display: flex; gap: 18px; }
 .calc-tb-icon { font-size: 18px; color: #888; cursor: pointer; padding: 4px; }
 .calc-tb-del { font-size: 22px; color: #4caf50; cursor: pointer; padding: 4px; }
 
-/* Grid */
-.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; background: #f0f0f0; padding: 6px 10px 4px; }
+/* Grid — padding interioara cu butoane rotunde */
+.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; background: var(--s-bg); padding: 6px 10px 4px; }
 .cb { height: 74px; border: none; font-size: 24px; font-weight: 400; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.08s, opacity 0.08s;
   background: transparent; margin: 3px; border-radius: 50%; }
 .cb:active { transform: scale(0.88); opacity: 0.7; }
 
+/* Cifre — cerc gri foarte deschis */
 .cb.num  { background: #e8e8e8; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+/* Functii — cerc gri mediu */
 .cb.func { background: #d4d4d4; color: #3a3a3a; font-size: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+/* Operatori — cerc gri inchis */
 .cb.op   { background: #606060; color: #fff; font-size: 26px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+/* Egal — cerc verde Samsung */
 .cb.eq   { background: #34c759; color: #fff; font-size: 26px; box-shadow: 0 2px 8px rgba(52,199,89,0.4); }
+/* 0 — cerc normal (nu mai e lat, Samsung One UI modern) */
 .cb.zero { grid-column: span 1; justify-content: center; padding-left: 0; }
 
-.reset-row { text-align: center; padding: 2px; background: #f0f0f0; }
+.reset-row { text-align: center; padding: 2px; background: var(--s-bg); }
 .reset-btn { background: transparent; border: none; color: #e0e0e0; font-size: 10px; cursor: pointer; }
-.samsung-nav { height: 46px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; gap: 32px; border-top: 1px solid #ddd; }
+.samsung-nav { height: 46px; background: var(--s-bg); display: flex; align-items: center; justify-content: center; gap: 32px; border-top: 1px solid #ddd; }
 .snav-dot { width: 5px; height: 5px; border-radius: 50%; background: #ccc; }
 .snav-dot.a { background: #888; width: 16px; border-radius: 3px; }
 
 /* SETUP */
-#setup-app { position: absolute; inset: 0; background: #2a2a2a; display: flex; flex-direction: column;
+#setup-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
   align-items: center; justify-content: center; padding: 32px 28px; gap: 16px;
   opacity: 0; pointer-events: none; transition: opacity 0.4s; z-index: 50; }
 #setup-app.vis { opacity: 1; pointer-events: all; }
-.setup-logo { width: 68px; height: 68px; background: #444444; border-radius: 22px;
-  display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-.setup-title { font-size: 20px; font-weight: 600; color: #f0f0f0; text-align: center; }
-.setup-sub { font-size: 13px; color: #888; text-align: center; line-height: 1.7; }
+.setup-logo { width: 68px; height: 68px; background: var(--t-primary); border-radius: 22px;
+  display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 0 50px rgba(255,255,255,0.4); }
+.setup-title { font-size: 20px; font-weight: 600; color: var(--t-text); text-align: center; }
+.setup-sub { font-size: 13px; color: var(--t-muted); text-align: center; line-height: 1.7; }
 .pin-dots { display: flex; gap: 14px; }
-.pdot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #ccc;
+.pdot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--t-primary);
   background: transparent; transition: background 0.15s, transform 0.15s; }
-.pdot.f { background: #1a1a1a; border-color: #1a1a1a; transform: scale(1.1); }
+.pdot.f { background: var(--t-primary); box-shadow: 0 0 10px rgba(255,255,255,0.6); transform: scale(1.1); }
 .pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; width: 100%; }
-.pp { height: 56px; border-radius: 14px; border: 1px solid #444; background: #333333;
-  color: #f0f0f0; font-size: 22px; cursor: pointer; transition: background 0.1s, transform 0.1s; }
-.pp:active { background: #555555; transform: scale(0.94); }
-.pp.del { background: transparent; border-color: transparent; color: #aaa; font-size: 16px; }
-.pp.ok  { background: #ffffff; color: #111; font-size: 14px; font-weight: 600; border-color: #ffffff; }
-.pp.ok:disabled { background: #3d3d3d; color: #666; border-color: #444; cursor: not-allowed; }
-.formula-box { width: 100%; background: #333333; border: 1px solid #444444;
+.pp { height: 56px; border-radius: 14px; border: 0.5px solid var(--t-border); background: var(--t-surface);
+  color: var(--t-text); font-size: 22px; cursor: pointer; transition: background 0.1s, transform 0.1s; }
+.pp:active { background: var(--t-primary); transform: scale(0.94); }
+.pp.del { background: transparent; color: var(--t-muted); font-size: 16px; }
+.pp.ok  { background: var(--t-primary); color: white; font-size: 14px; font-weight: 600; }
+.pp.ok:disabled { background: var(--t-surface); color: var(--t-muted); cursor: not-allowed; }
+.formula-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.3);
   border-radius: 16px; padding: 14px; text-align: center; }
-.formula-label { font-size: 9px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
-.formula-val { font-size: 22px; font-family: monospace; color: #333; letter-spacing: 8px; }
-.formula-note { font-size: 11px; color: #aaa; margin-top: 6px; }
-.setup-warn { width: 100%; background: rgba(239,83,80,0.1); border: 1px solid rgba(239,83,80,0.3);
-  border-radius: 12px; padding: 12px; font-size: 12px; color: #c62828; text-align: center; line-height: 1.7; }
+.formula-label { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+.formula-val { font-size: 22px; font-family: monospace; color: var(--t-light); letter-spacing: 8px; }
+.formula-note { font-size: 11px; color: var(--t-muted); margin-top: 6px; }
+.setup-warn { width: 100%; background: rgba(255,68,102,0.06); border: 0.5px solid rgba(255,68,102,0.2);
+  border-radius: 12px; padding: 12px; font-size: 12px; color: #FF6B6B; text-align: center; line-height: 1.7; }
 
 /* UNLOCK */
-.unlock-ov { position: absolute; inset: 0; background: #2a2a2a; display: flex; flex-direction: column;
+.unlock-ov { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 16px; z-index: 200;
   opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .unlock-ov.show { opacity: 1; pointer-events: all; }
-.unlock-ring { width: 80px; height: 80px; border-radius: 50%; background: #3d3d3d;
-  border: 2px solid #ffffff; display: flex; align-items: center; justify-content: center;
+.unlock-ring { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.15);
+  border: 2px solid var(--t-primary); display: flex; align-items: center; justify-content: center;
   font-size: 36px; animation: upop 0.5s cubic-bezier(.17,.67,.47,1.4); }
 @keyframes upop { 0%{transform:scale(0.3);opacity:0} 100%{transform:scale(1);opacity:1} }
-.unlock-text { font-size: 16px; font-weight: 600; letter-spacing: 6px; color: #f0f0f0; font-family: monospace; }
-.unlock-sub { font-size: 11px; color: #2e7d32; }
+.unlock-text { font-size: 16px; font-weight: 600; letter-spacing: 6px; color: var(--t-light); font-family: monospace; }
+.unlock-sub { font-size: 11px; color: var(--t-green); }
 
-/* TIREA HOME — tema alba */
-#tirea-app { position: absolute; inset: 0; background: #ffffff; display: flex; flex-direction: column;
+/* TIREA HOME */
+#tirea-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
   opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; z-index: 40; transform: translateY(18px); }
 #tirea-app.vis { opacity: 1; pointer-events: all; transform: translateY(0); }
 .t-topbar { padding: 42px 18px 12px; display: flex; align-items: center; justify-content: space-between;
@@ -153,9 +145,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
 .ghost-bar { margin: 10px 18px 0; padding: 9px 14px; border-radius: 12px; display: flex; align-items: center;
   gap: 9px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.3s; flex-shrink: 0; }
-.ghost-bar.online { background: #333333; border: 1px solid #444444; color: #4caf50; }
-.ghost-bar.ghost  { background: #2a2a2a; border: 1px solid #444; color: #666; }
-.ghost-dot { width: 7px; height: 7px; border-radius: 50%; background: #2e7d32; animation: gdot 2s infinite; flex-shrink: 0; }
+.ghost-bar.online { background: rgba(76,175,80,0.07); border: 0.5px solid rgba(76,175,80,0.2); color: var(--t-green); }
+.ghost-bar.ghost  { background: rgba(0,0,0,0.3); border: 0.5px solid #222; color: #444; }
+.ghost-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t-green); animation: gdot 2s infinite; flex-shrink: 0; }
 .ghost-bar.ghost .ghost-dot { background: #333; animation: none; }
 @keyframes gdot { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .ghost-ico { margin-left: auto; font-size: 15px; }
@@ -165,7 +157,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .t-stories::-webkit-scrollbar { display: none; }
 .t-story { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; cursor: pointer; }
 .s-ring { width: 54px; height: 54px; border-radius: 50%; padding: 2px;
-  background: #1a1a1a; }
+  background: linear-gradient(135deg, var(--t-primary), var(--t-light)); }
 .s-av { width: 100%; height: 100%; border-radius: 50%; background: var(--t-surface2);
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
   color: var(--t-light); border: 2px solid var(--t-bg); }
@@ -177,8 +169,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .t-conv-list { flex: 1; overflow-y: auto; min-height: 0; }
 .t-conv-list::-webkit-scrollbar { display: none; }
 .t-conv { padding: 12px 18px; display: flex; align-items: center; gap: 13px;
-  border-bottom: 0.5px solid #f0f0f0; cursor: pointer; transition: background 0.12s; }
-.t-conv:active { background: rgba(0,0,0,0.05); }
+  border-bottom: 0.5px solid #444; cursor: pointer; transition: background 0.12s; }
+.t-conv:active { background: rgba(255,255,255,0.05); }
 .t-av { width: 46px; height: 46px; border-radius: 50%; background: var(--t-surface2);
   border: 1px solid var(--t-border); display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 600; color: var(--t-light); flex-shrink: 0; position: relative; }
@@ -196,7 +188,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .t-nav-item { flex: 1; padding: 10px 4px 0; text-align: center; cursor: pointer; background: none; border: none; font-family: inherit; -webkit-tap-highlight-color: transparent; }
 .t-nav-icon { font-size: 22px; display: block; }
 .t-nav-label { font-size: 9px; color: var(--t-muted); margin-top: 3px; }
-.t-nav-item.active .t-nav-label { color: #ffffff; font-weight: 700; }
+.t-nav-item.active .t-nav-label { color: var(--t-light); }
 
 /* PROFIL */
 #profil-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
@@ -210,9 +202,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .profil-scroll { flex: 1; overflow-y: auto; }
 .profil-scroll::-webkit-scrollbar { display: none; }
 .profil-hero { display: flex; flex-direction: column; align-items: center; padding: 28px 20px 20px; border-bottom: 0.5px solid var(--t-border); }
-.profil-av { width: 80px; height: 80px; border-radius: 50%; background: #444444;
+.profil-av { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg,var(--t-primary),var(--t-light));
   display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700;
-  color: white; margin-bottom: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  color: white; margin-bottom: 12px; box-shadow: 0 0 30px rgba(255,255,255,0.3); }
 .profil-name { font-size: 20px; font-weight: 700; color: var(--t-text); }
 .profil-handle { font-size: 13px; color: var(--t-muted); margin-top: 3px; font-family: monospace; }
 .profil-stats { display: flex; margin-top: 18px; width: 100%; border: 0.5px solid var(--t-border); border-radius: 16px; overflow: hidden; }
@@ -222,9 +214,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .p-stat-label { font-size: 10px; color: var(--t-muted); margin-top: 2px; }
 .profil-section { padding: 14px 20px; }
 .profil-sec-title { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; font-weight: 600; margin-bottom: 10px; }
-.profil-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 0.5px solid #f0f0f0; cursor: pointer; }
+.profil-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 0.5px solid #444; cursor: pointer; }
 .profil-row:last-child { border-bottom: none; }
-.profil-row-icon { width: 34px; height: 34px; border-radius: 10px; background: #3d3d3d;
+.profil-row-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--t-surface2);
   display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; flex-shrink: 0; }
 .profil-row-info { flex: 1; }
 .profil-row-label { font-size: 14px; color: var(--t-text); font-weight: 500; }
@@ -240,7 +232,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .setari-scroll::-webkit-scrollbar { display: none; }
 .setari-group-title { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; font-weight: 600; padding: 12px 20px 6px; }
 .setari-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 0.5px solid rgba(0,40,128,0.25); cursor: pointer; }
-.s-row-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; background: #3d3d3d!important;
+.s-row-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center;
   justify-content: center; font-size: 17px; margin-right: 13px; flex-shrink: 0; }
 .s-row-info { flex: 1; }
 .s-row-label { font-size: 14px; color: var(--t-text); font-weight: 500; }
@@ -252,7 +244,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .toggle.on::after { transform: translateX(18px); }
 .setari-val { font-size: 12px; color: var(--t-muted); font-family: monospace; }
 .setari-arrow { color: #333; font-size: 16px; }
-.version-footer { text-align: center; padding: 20px; font-size: 11px; color: #555; font-family: monospace; }
+.version-footer { text-align: center; padding: 20px; font-size: 11px; color: #1a1a3a; font-family: monospace; }
 
 /* CHAT */
 #chat-app { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column;
@@ -260,26 +252,26 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   outline: none; border-radius: 34px; }
 #chat-app.vis { opacity: 1; pointer-events: all; transform: translateX(0); }
 .chat-topbar { padding: 42px 14px 10px; display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid #444; flex-shrink: 0; background: #2a2a2a; }
-.back-btn { color: #1a1a1a; font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; }
-.chat-peer-av { width: 38px; height: 38px; border-radius: 50%; background: #3d3d3d;
+  border-bottom: 2px solid #ffffff; flex-shrink: 0; background: #fff; }
+.back-btn { color: #ffffff; font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; }
+.chat-peer-av { width: 38px; height: 38px; border-radius: 50%; background: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
-  color: #f0f0f0; border: 1px solid #555; flex-shrink: 0; }
+  color: #ffffff; border: 2px solid #ffffff; flex-shrink: 0; }
 .chat-peer-info { flex: 1; }
-.chat-peer-name { font-size: 15px; font-weight: 700; color: #f0f0f0; }
-.chat-peer-status { font-size: 11px; color: #888; display: flex; align-items: center; gap: 4px; }
-.live-dot { width: 6px; height: 6px; background: #2e7d32; border-radius: 50%; animation: ldot 1.5s infinite; }
+.chat-peer-name { font-size: 15px; font-weight: 700; color: #ffffff; }
+.chat-peer-status { font-size: 11px; color: #ffffff; display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+.live-dot { width: 6px; height: 6px; background: #4caf50; border-radius: 50%; animation: ldot 1.5s infinite; }
 @keyframes ldot { 0%,100%{opacity:1} 50%{opacity:0.2} }
-.chat-act-btn { width: 36px; height: 36px; border: 1px solid #555; border-radius: 50%;
-  background: #3d3d3d; color: #ccc; font-size: 16px; cursor: pointer;
+.chat-act-btn { width: 36px; height: 36px; border: 2px solid #ffffff; border-radius: 50%;
+  background: #fff; color: #ffffff; font-size: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-.chat-act-btn:active { background: #ffffff; color: #111; }
+.chat-act-btn:active { background: #ffffff; color: #fff; }
 .enc-bar { padding: 5px 16px; background: #333; border-bottom: 1px solid #444;
-  font-size: 10px; color: #777; flex-shrink: 0; font-family: monospace; }
+  font-size: 10px; color: #888; flex-shrink: 0; font-family: monospace; opacity: 0.7; }
 .messages { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px;
-  overflow-y: auto; background: #2a2a2a; scroll-behavior: smooth; }
+  overflow-y: auto; background: #fff; scroll-behavior: smooth; }
 .messages::-webkit-scrollbar { width: 2px; }
-.messages::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; opacity: 0.3; }
+.messages::-webkit-scrollbar-thumb { background: #ffffff; border-radius: 2px; opacity: 0.3; }
 .msg-wrap { display: flex; flex-direction: column; }
 .msg-wrap.me   { align-items: flex-end; }
 .msg-wrap.them { align-items: flex-start; }
@@ -294,44 +286,44 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .msg-input { flex: 1; padding: 10px 16px; background: #3d3d3d; border: none;
   border-radius: 24px; color: #f0f0f0; font-size: 14px; font-family: inherit; outline: none;
   resize: none; max-height: 80px; }
-.msg-input::placeholder { color: #bbb; }
+.msg-input::placeholder { color: #666; }
 .send-btn { width: 42px; height: 42px; background: #f0f0f0; border: none; border-radius: 50%;
   cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
 .send-btn:active { opacity: 0.8; transform: scale(0.93); }
-.typing-bubble { background: #3d3d3d; border: none; border-radius: 20px;
+.typing-bubble { background: #f0f4ff; border: 2px solid #ffffff; border-radius: 20px;
   border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; opacity:0.7; }
-.td { width: 7px; height: 7px; background: #888; border-radius: 50%; animation: tdot 1.2s infinite; }
+.td { width: 7px; height: 7px; background: #ffffff; border-radius: 50%; animation: tdot 1.2s infinite; }
 .td:nth-child(2) { animation-delay: 0.2s; }
 .td:nth-child(3) { animation-delay: 0.4s; }
 @keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
   flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 20; }
 .disc-ov.show { display: flex; }
 .disc-icon { font-size: 52px; }
-.disc-title { font-size: 18px; font-weight: 700; color: #f0f0f0; }
-.disc-sub { font-size: 13px; color: #999; text-align: center; line-height: 1.7; }
-.disc-btn { padding: 12px 36px; background: #f0f0f0; color: #111; border: none;
+.disc-title { font-size: 18px; font-weight: 700; color: #ffffff; }
+.disc-sub { font-size: 13px; color: rgba(255,255,255,0.6); text-align: center; line-height: 1.7; }
+.disc-btn { padding: 12px 36px; background: #ffffff; color: white; border: none;
   border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 /* CALL OVERLAY */
-.call-ov { position: absolute; inset: 0; background: #2a2a2a; display: none;
+.call-ov { position: absolute; inset: 0; background: #fff; display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 80; }
 .call-ov.show { display: flex; }
-.call-av { width: 90px; height: 90px; border-radius: 50%; background: #3d3d3d; border: 2px solid #f0f0f0;
-  display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #f0f0f0; }
-.call-name { font-size: 22px; font-weight: 700; color: #f0f0f0; }
-.call-status { font-size: 14px; color: #888; font-family: monospace; }
+.call-av { width: 90px; height: 90px; border-radius: 50%; background: #fff; border: 3px solid #ffffff;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #ffffff; }
+.call-name { font-size: 22px; font-weight: 700; color: #ffffff; }
+.call-status { font-size: 14px; color: rgba(255,255,255,0.6); font-family: monospace; }
 .call-btns { display: flex; gap: 24px; margin-top: 10px; }
 .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 24px; }
-.call-btn.end { background: #ef5350; color: white; }
-.call-btn.mute { background: #3d3d3d; border: 1px solid #555; }
-.call-btn.spk  { background: #3d3d3d; border: 1px solid #555; }
+.call-btn.end { background: #2a2a2a; color: white; }
+.call-btn.mute { background: #fff; border: 2px solid #2a2a2a; }
+.call-btn.spk  { background: #fff; border: 2px solid #2a2a2a; }
 
 /* ADD CONTACT MODAL */
 .modal-ov { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: none;
   align-items: flex-end; justify-content: center; z-index: 150; }
 .modal-ov.show { display: flex; }
-.modal-box { width: 100%; background: #333333; border-radius: 24px 24px 0 0;
+.modal-box { width: 100%; background: var(--t-surface); border-radius: 24px 24px 0 0;
   padding: 24px 24px 40px; display: flex; flex-direction: column; gap: 14px; }
 .modal-title { font-size: 16px; font-weight: 700; color: var(--t-text); text-align: center; }
 .modal-input { width: 100%; padding: 12px 16px; background: var(--t-surface2);
@@ -339,8 +331,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   font-size: 15px; font-family: inherit; outline: none; }
 .modal-input:focus { border-color: var(--t-primary); }
 .modal-input::placeholder { color: var(--t-muted); }
-.modal-btn { width: 100%; padding: 14px; background: #f0f0f0; border: none;
-  border-radius: 14px; color: #111; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.modal-btn { width: 100%; padding: 14px; background: var(--t-primary); border: none;
+  border-radius: 14px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .modal-cancel { width: 100%; padding: 12px; background: transparent; border: none;
   color: var(--t-muted); font-size: 14px; cursor: pointer; font-family: inherit; }
 
@@ -355,10 +347,10 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .p2p-tabs { display:flex;gap:8px;width:100%; }
 .p2p-tab { flex:1;padding:10px;border:0.5px solid var(--t-border);border-radius:12px;
   background:var(--t-surface);color:var(--t-muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.2s; }
-.p2p-tab.active { background:#f0f0f0;color:#111;border-color:#f0f0f0; }
+.p2p-tab.active { background:var(--t-primary);color:white;border-color:var(--t-primary); }
 #p2p-host-panel,#p2p-join-panel { width:100%;display:flex;flex-direction:column;gap:10px; }
 .p2p-step { font-size:12px;color:var(--t-muted);padding:4px 0; }
-.p2p-gen-btn { width:100%;padding:13px;background:#f0f0f0;color:#111!important;border:none;border-radius:14px;
+.p2p-gen-btn { width:100%;padding:13px;background:var(--t-primary);border:none;border-radius:14px;
   color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit; }
 .p2p-code-wrap { width:100%;display:flex;flex-direction:column;gap:8px; }
 .p2p-code-label { font-size:11px;color:var(--t-muted); }
@@ -371,7 +363,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   border-radius:12px;color:var(--t-text);font-size:11px;font-family:monospace;resize:none;
   height:80px;outline:none; }
 .p2p-input:focus { border-color:var(--t-primary); }
-.p2p-connect-btn { width:100%;padding:13px;background:#f0f0f0;color:#111!important;border:none;border-radius:14px;
+.p2p-connect-btn { width:100%;padding:13px;background:#4caf50;border:none;border-radius:14px;
   color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit; }
 .p2p-status { font-size:12px;text-align:center;color:var(--t-green);min-height:18px;font-weight:600; }
 /* PAROLA SECRETA */
@@ -381,17 +373,17 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .secret-body { flex:1;overflow-y:auto;padding:20px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:14px; }
 .secret-title { font-size:18px;font-weight:700;color:var(--t-text);text-align:center; }
 .secret-sub { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7; }
-.secret-input { width:100%;padding:16px;background:#333333;border:2px solid #555555;
+.secret-input { width:100%;padding:16px;background:var(--t-surface);border:2px solid var(--t-border);
   border-radius:14px;color:var(--t-text);font-size:18px;font-family:monospace;
   text-align:center;letter-spacing:4px;outline:none; }
 .secret-input:focus { border-color:var(--t-primary); }
 .secret-strength { font-size:11px;min-height:16px;text-align:center; }
-.secret-btn { width:100%;padding:14px;background:#f0f0f0;color:#111!important;border:none;border-radius:14px;
+.secret-btn { width:100%;padding:14px;background:var(--t-primary);border:none;border-radius:14px;
   color:white;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit; }
 .secret-btn:disabled { background:var(--t-surface);color:var(--t-muted);cursor:not-allowed; }
 .secret-note { font-size:11px;color:var(--t-muted);text-align:center;line-height:1.7;
   background:rgba(255,180,0,0.05);border:0.5px solid rgba(255,180,0,0.2);padding:12px;border-radius:12px; }
-#secretCurrent { font-size:12px;color:#2e7d32;text-align:center;min-height:18px;font-weight:600; }
+#secretCurrent { font-size:12px;color:#4caf50;text-align:center;min-height:18px;font-weight:600; }
 
 #addfriend-app,#qr-app,#link-app,#pin-app { position:absolute;inset:0;background:var(--t-bg);
   display:flex;flex-direction:column;opacity:0;pointer-events:none;
@@ -408,12 +400,12 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .af-arrow { font-size:20px;color:var(--t-muted); }
 .af-divider { font-size:10px;color:var(--t-muted);text-align:center;letter-spacing:1px;padding:6px 0 4px; }
 .af-pin-input-wrap { display:flex;gap:10px; }
-.af-pin-input { flex:1;padding:14px;background:#333333;border:0.5px solid #555555;
+.af-pin-input { flex:1;padding:14px;background:var(--t-surface);border:0.5px solid var(--t-border);
   border-radius:14px;color:var(--t-text);font-size:22px;font-family:monospace;
   text-align:center;letter-spacing:8px;outline:none; }
 .af-pin-input:focus { border-color:var(--t-primary); }
 .af-pin-input::placeholder { color:var(--t-muted);letter-spacing:4px;font-size:16px; }
-.af-pin-btn { padding:14px 18px;background:#f0f0f0;color:#111!important;border:none;border-radius:14px;
+.af-pin-btn { padding:14px 18px;background:var(--t-primary);border:none;border-radius:14px;
   color:white;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap; }
 .af-pin-btn:disabled { background:var(--t-surface2);color:var(--t-muted);cursor:not-allowed; }
 .af-pin-status { font-size:12px;text-align:center;min-height:18px;color:var(--t-green); }
@@ -563,7 +555,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     </div>
     <div class="t-stories">
       <div class="t-story" onclick="openAddFriend()"><div class="s-add">+</div><div class="s-name">Adaugă</div></div>
-      <div class="t-story" onclick="openProfil()"><div class="s-ring"><div class="s-av" id="myAvatar">EU</div></div><div class="s-name" style="color:var(--t-light)">Profil</div></div>
+      <div class="t-story" onclick="openProfil()"><div class="s-ring"><div class="s-av">EU</div></div><div class="s-name" style="color:var(--t-light)">Profil</div></div>
     </div>
     <div class="t-section">CONTACTE</div>
     <div style="padding: 6px 18px 8px; flex-shrink:0;">
@@ -578,7 +570,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     </div>
     <div class="t-section" id="convLabel" style="padding-top:2px"></div>
     <div class="t-conv-list" id="convList">
-      <!-- contactele reale vor aparea aici -->
+
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
@@ -633,28 +625,28 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div class="setari-scroll">
       <div class="setari-group-title">CONFIDENȚIALITATE</div>
       <div class="setari-row">
-        <div class="s-row-icon" style="background:rgba(46,125,50,0.1)">👻</div>
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">👻</div>
         <div class="s-row-info"><div class="s-row-label">Ghost Mode</div><div class="s-row-sub">ascunde statusul online</div></div>
         <div class="toggle" id="tog-ghost" onclick="toggleGhost()"></div>
       </div>
       <div class="setari-row">
-        <div class="s-row-icon" style="background:rgba(46,125,50,0.1)">💨</div>
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">💨</div>
         <div class="s-row-info"><div class="s-row-label">Șterge la ieșire</div><div class="s-row-sub">mesajele dispar la închiderea chat-ului</div></div>
         <div class="toggle on" id="tog-delete" onclick="toggleDeleteOnExit()"></div>
       </div>
       <div class="setari-row">
-        <div class="s-row-icon" style="background:rgba(46,125,50,0.1)">👁</div>
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">👁</div>
         <div class="s-row-info"><div class="s-row-label">Confirmare citit</div><div class="s-row-sub">arată ✓✓ la mesaje</div></div>
         <div class="toggle on" id="tog-read" onclick="toggleReadReceipt()"></div>
       </div>
       <div class="setari-group-title">SECURITATE</div>
       <div class="setari-row" onclick="openSecretScreen()">
-        <div class="s-row-icon" style="background:rgba(0,0,0,0.1)">🔑</div>
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🔑</div>
         <div class="s-row-info"><div class="s-row-label">Parolă secretă comună</div><div class="s-row-sub">protecție maximă AES-256 · știți doar voi doi</div></div>
         <span class="setari-arrow">›</span>
       </div>
       <div class="setari-row" onclick="resetCode()">
-        <div class="s-row-icon" style="background:rgba(0,0,0,0.1)">🔄</div>
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🔄</div>
         <div class="s-row-info"><div class="s-row-label">Schimbă codul</div><div class="s-row-sub">setează un cod nou SHA-256</div></div>
         <span class="setari-arrow">›</span>
       </div>
@@ -665,9 +657,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       </div>
       <div class="setari-group-title">DESPRE</div>
       <div class="setari-row">
-        <div class="s-row-icon" style="background:rgba(0,0,0,0.1)">🛡️</div>
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🛡️</div>
         <div class="s-row-info"><div class="s-row-label">Criptare</div><div class="s-row-sub">AES-256-GCM · end-to-end</div></div>
-        <span class="setari-val" style="color:#2e7d32">activ</span>
+        <span class="setari-val" style="color:var(--t-green)">activ</span>
       </div>
       <div class="version-footer">T.IREA · SHA-256 · v3.0</div>
     </div>
@@ -689,7 +681,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div class="enc-bar">🔐 end-to-end encrypted · dispare la închidere</div>
     <div class="messages" id="messages"></div>
     <!-- WebRTC status bar -->
-    <div id="p2p-bar" style="display:none;padding:6px 14px;background:rgba(46,125,50,0.08);border-top:1px solid rgba(46,125,50,0.2);font-size:10px;color:#2e7d32;text-align:center;font-family:monospace;flex-shrink:0;">
+    <div id="p2p-bar" style="display:none;padding:6px 14px;background:rgba(76,175,80,0.08);border-top:1px solid rgba(76,175,80,0.2);font-size:10px;color:#4caf50;text-align:center;font-family:monospace;flex-shrink:0;">
       ⚡ P2P conectat · direct · fără server
     </div>
     <div class="chat-input-area">
@@ -774,7 +766,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
       <!-- METHOD 1: QR -->
       <div class="af-method-card" onclick="openQR()">
-        <div class="af-method-icon" style="background:rgba(46,125,50,0.1);color:#2e7d32">⬛</div>
+        <div class="af-method-icon" style="background:rgba(76,175,80,0.1);color:#4caf50">⬛</div>
         <div class="af-method-info">
           <div class="af-method-title">Cod QR</div>
           <div class="af-method-sub">Scanați reciproc — cel mai sigur</div>
@@ -784,7 +776,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
       <!-- METHOD 2: LINK -->
       <div class="af-method-card" onclick="openLink()">
-        <div class="af-method-icon" style="background:rgba(0,0,0,0.1);color:#555555">🔗</div>
+        <div class="af-method-icon" style="background:rgba(255,255,255,0.1);color:#cccccc">🔗</div>
         <div class="af-method-info">
           <div class="af-method-title">Link invitație</div>
           <div class="af-method-sub">Expiră în 24h — trimite pe orice platformă</div>
@@ -911,14 +903,14 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
 </div></div>
 <script>
-// Scalare dinamica — telefonul incape intotdeauna in viewport
+
+// Scalare dinamica PC
 function scalePhone() {
   var phone = document.querySelector('.phone');
   if (!phone) return;
-  var vw = window.innerWidth;
-  var vh = window.innerHeight;
-  var scaleH = (vh - 20) / 780;
-  var scaleW = (vw - 20) / 360;
+  if (window.innerWidth <= 480) { phone.style.transform = ''; return; }
+  var scaleH = (window.innerHeight - 20) / 780;
+  var scaleW = (window.innerWidth - 20) / 360;
   var scale = Math.min(scaleH, scaleW, 1);
   phone.style.transform = 'scale(' + scale + ')';
   var excess = 780 * (1 - scale);
@@ -1057,31 +1049,15 @@ function cp(v) {
 async function checkPin(entered) {
   const nEl = document.getElementById('cNum');
   const eEl = document.getElementById('cExpr');
-  const hEl = document.getElementById('cHint');
-
-  // Reload hash din localStorage la fiecare verificare
-  if (!storedHash) storedHash = localStorage.getItem('tirea_hash');
-
-  if (!storedHash) {
-    // Nu exista hash — du la setup
-    showSetup(); return;
-  }
-
   const hash = await sha256(entered);
   if (hash === storedHash) {
     unlock();
   } else {
-    // Cod gresit — arata eroare clara
-    nEl.textContent = 'Cod greșit';
-    nEl.style.fontSize = '28px';
-    hEl.textContent = 'încearcă din nou';
-    hEl.className = 'calc-hint on';
+    nEl.style.color = '#FF4466';
     setTimeout(() => {
       cur = '0'; nEl.textContent = '0'; nEl.className = 'calc-num';
-      nEl.style.fontSize = ''; nEl.style.color = '';
-      eEl.textContent = ''; updateHint();
-      window._savedPin = null;
-    }, 1200);
+      nEl.style.color = ''; eEl.textContent = ''; updateHint();
+    }, 600);
   }
 }
 
@@ -1176,7 +1152,7 @@ function panicMode() {
     setTimeout(() => {
       const el = document.createElement('div');
       el.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:999';
-      el.innerHTML = '<div style="font-size:48px">✓</div><div style="color:#2e7d32;font-size:16px;font-weight:600">Tirea șters complet</div><div style="color:#555;font-size:12px">Nicio urmă.</div>';
+      el.innerHTML = '<div style="font-size:48px">✓</div><div style="color:#4caf50;font-size:16px;font-weight:600">Tirea șters complet</div><div style="color:#555;font-size:12px">Nicio urmă.</div>';
       document.querySelector('.screen').appendChild(el);
       setTimeout(() => el.remove(), 2500);
     }, 100);
@@ -1185,14 +1161,13 @@ function panicMode() {
 
 function unlock() {
   const ov = document.getElementById('unlockOv');
-  // Ascunde calculatorul IMEDIAT
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
   setTimeout(() => {
     ov.classList.remove('show');
     document.getElementById('tirea-app').classList.add('vis');
-    startListening(); // porneste ascultarea Firebase
+    startListening();
   }, 1200);
   cur='0'; expr=''; waitPct=false;
   document.getElementById('cNum').textContent='0';
@@ -1251,12 +1226,13 @@ function navTo(tab) {
     if(el) el.classList.toggle('active', t === tab);
   });
   if (tab === 'chat') {
-    ['profil-app','setari-app','addfriend-app','qr-app','link-app','pin-app'].forEach(id => {
+    // Inchide toate sub-ecranele, ramane hub-ul principal vizibil
+    ['profil-app','setari-app','addfriend-app','qr-app','link-app','pin-app','chat-app','p2p-app','secret-app'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.classList.remove('vis');
     });
-    // Deschide cautare prieteni
-    openAddFriend();
+    // Asigura ca tirea-app e vizibil
+    document.getElementById('tirea-app').classList.add('vis');
   }
 }
 
@@ -1814,7 +1790,7 @@ function confirmAddFriend() {
   // Mesaj de confirmare vizual
   setTimeout(() => {
     const st = document.createElement('div');
-    st.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:#2e7d32;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap';
+    st.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:#4caf50;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap';
     st.textContent = '✓ ' + name + ' adăugat!';
     document.querySelector('.screen').appendChild(st);
     setTimeout(() => st.remove(), 2500);
@@ -1851,7 +1827,7 @@ function openSecretScreen() {
   const cur = document.getElementById('secretCurrent');
   if (sharedSecret) {
     cur.textContent = '✓ Parolă activă — chat-ul e protejat maxim 🔐';
-    cur.style.color = '#2e7d32';
+    cur.style.color = '#4caf50';
   } else {
     cur.textContent = '⚠️ Nicio parolă setată — risc mediu';
     cur.style.color = '#FFB400';
@@ -1866,7 +1842,7 @@ function secretTyped(inp) {
   if (v.length === 0) { str.textContent = ''; return; }
   if (v.length < 4) { str.style.color='#FF4466'; str.textContent = 'Prea scurtă — minim 4 caractere'; }
   else if (v.length < 8) { str.style.color='#FFB400'; str.textContent = 'Acceptabilă — recomandăm mai lungă'; }
-  else { str.style.color='#2e7d32'; str.textContent = '✓ Parolă puternică'; }
+  else { str.style.color='#4caf50'; str.textContent = '✓ Parolă puternică'; }
 }
 
 function confirmSecret() {
@@ -1876,7 +1852,7 @@ function confirmSecret() {
   document.getElementById('secretInput').value = '';
   const cur = document.getElementById('secretCurrent');
   cur.textContent = '✓ Parolă setată! Chat-ul e acum protejat maxim 🔐';
-  cur.style.color = '#2e7d32';
+  cur.style.color = '#4caf50';
   document.getElementById('secretBtn').disabled = true;
   // Arata confirmare si inchide
   setTimeout(() => closePage('secret-app'), 1500);
@@ -1885,11 +1861,11 @@ function confirmSecret() {
 // Parola secreta — buton in setari
 function showMyId() {
   const el = document.createElement('div');
-  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#ffffff;border:1px solid #e0e0e0;color:#111;padding:16px 20px;border-radius:16px;font-size:12px;z-index:500;text-align:center;width:300px';
-  el.innerHTML = '<div style="font-size:11px;color:#555555;margin-bottom:8px">ID-ul tău Tirea</div>'
-    + '<div style="font-family:monospace;font-size:11px;color:#111;word-break:break-all;background:#f5f5f5;padding:8px;border-radius:8px">' + myUserId + '</div>'
-    + '<div style="font-size:10px;color:#aaaaaa;margin-top:8px">Trimite-l prietenului să te poată chema</div>'
-    + '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+myUserId+'\');this.textContent=\'✓ Copiat!\'" style="margin-top:10px;background:#1a1a1a;border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">📋 Copiază</button>'
+  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#001845;border:1px solid #ffffff;color:white;padding:16px 20px;border-radius:16px;font-size:12px;z-index:500;text-align:center;width:300px';
+  el.innerHTML = '<div style="font-size:11px;color:#cccccc;margin-bottom:8px">ID-ul tău Tirea</div>'
+    + '<div style="font-family:monospace;font-size:11px;color:#fff;word-break:break-all;background:#000;padding:8px;border-radius:8px">' + myUserId + '</div>'
+    + '<div style="font-size:10px;color:#5577AA;margin-top:8px">Trimite-l prietenului să te poată chema</div>'
+    + '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+myUserId+'\');this.textContent=\'✓ Copiat!\'" style="margin-top:10px;background:#ffffff;border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">📋 Copiază</button>'
     + '<button onclick="this.parentElement.remove()" style="margin-top:10px;margin-left:8px;background:transparent;border:1px solid #333;color:#666;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">Închide</button>';
   document.querySelector('.screen').appendChild(el);
 }
@@ -1973,9 +1949,9 @@ function startListening() {
 function showIncomingSignal(fromId, fromName) {
   const el = document.createElement('div');
   el.id = 'incomingSignal';
-  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:white;padding:16px 20px;border-radius:16px;font-size:14px;font-weight:600;z-index:500;text-align:center;width:290px;box-shadow:0 8px 32px rgba(0,0,0,0.5)';
+  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#ffffff;color:white;padding:16px 20px;border-radius:16px;font-size:14px;font-weight:600;z-index:500;text-align:center;width:290px;box-shadow:0 8px 32px rgba(255,255,255,0.5)';
   el.innerHTML = '📞 <b>' + esc(fromName) + '</b> vrea să vorbești!<br><br>'
-    + '<button onclick="acceptSignal(\'' + fromId + '\',\'' + fromName + '\')" style="background:white;color:#1a1a1a;border:none;padding:9px 22px;border-radius:10px;font-weight:700;cursor:pointer;margin-right:8px">✓ Acceptă</button>'
+    + '<button onclick="acceptSignal(\'' + fromId + '\',\'' + fromName + '\')" style="background:white;color:#ffffff;border:none;padding:9px 22px;border-radius:10px;font-weight:700;cursor:pointer;margin-right:8px">✓ Acceptă</button>'
     + '<button onclick="document.getElementById(\'incomingSignal\').remove()" style="background:rgba(255,255,255,0.15);color:white;border:none;padding:9px 22px;border-radius:10px;font-weight:700;cursor:pointer">✗</button>';
   document.querySelector('.screen').appendChild(el);
   setTimeout(() => { const e=document.getElementById('incomingSignal'); if(e) e.remove(); }, 30000);
