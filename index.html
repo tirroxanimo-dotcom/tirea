@@ -816,7 +816,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <button class="qr-scan-btn" onclick="simulateScan()">📷 Scanează QR</button>
+      <div style="font-size:12px;color:var(--t-muted);text-align:center;padding:10px;background:var(--t-surface);border-radius:12px;line-height:1.6;">📷 Scanarea QR necesită o aplicație nativă.<br>Trimite-i prietenului <b>ID-ul tău</b> sau folosește <b>PIN</b> / <b>Link</b>.</div>
       <div class="qr-scan-result" id="qrScanResult"></div>
     </div>
   </div>
@@ -1665,17 +1665,7 @@ function drawQR() {
   }
 }
 
-function simulateScan() {
-  // Simulare scanare — în realitate ar folosi camera
-  const fakeId = 'TR' + Math.random().toString(36).substr(2,8).toUpperCase();
-  const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.','Vlad N.'][Math.floor(Math.random()*5)];
-  document.getElementById('qrScanResult').textContent = '✓ Găsit: ' + fakeName;
-  pendingFriend = { name: fakeName, id: fakeId };
-  setTimeout(() => {
-    document.getElementById('qrScanResult').textContent = '';
-    showConfirmAdd(fakeName, 'prin QR Code');
-  }, 800);
-}
+function simulateScan() { /* dezactivat */ }
 
 // ── LINK ──
 function openLink() {
@@ -1687,7 +1677,8 @@ function generateLink() {
   const token = Math.random().toString(36).substr(2,16);
   activeLink = token;
   activeLinkExpiry = Date.now() + 24*60*60*1000;
-  const link = 'tirea://invite/' + myTireaId + '/' + token;
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  const link = 'tirea://invite/' + myUserId + '/' + encodeURIComponent(displayName) + '/' + token;
   document.getElementById('linkBox').textContent = link;
   document.getElementById('linkExpire').textContent = 'Expiră în 24 ore';
   document.getElementById('linkInput').value = '';
@@ -1721,11 +1712,12 @@ function acceptLink() {
     return;
   }
   const parts = v.split('/');
-  const fakeName = ['Ion P.','Cristina B.','Sorin L.','Alina D.'][Math.floor(Math.random()*4)];
+  const peerId = parts[3] || '';
+  const peerName = parts[4] ? decodeURIComponent(parts[4]) : 'Prieten';
   document.getElementById('linkStatus').textContent = '✓ Link valid!';
   document.getElementById('linkStatus').style.color = 'var(--t-green)';
-  pendingFriend = { name: fakeName, id: parts[3] || 'TRUNKNOWN' };
-  setTimeout(() => showConfirmAdd(fakeName, 'prin link invitație'), 600);
+  pendingFriend = { name: peerName, id: peerId };
+  setTimeout(() => showConfirmAdd(peerName, 'prin link invitație'), 600);
 }
 
 // ── PIN ──
@@ -1737,10 +1729,14 @@ function openPIN() {
 function regenPIN() {
   if (activePINTimer) clearInterval(activePINTimer);
   activePIN = Math.floor(100000 + Math.random() * 900000).toString();
-  activePINExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+  activePINExpiry = Date.now() + 10 * 60 * 1000;
   document.getElementById('pinBig').textContent = activePIN.split('').join(' ');
   updatePINTimer();
   activePINTimer = setInterval(updatePINTimer, 1000);
+  // Publica PIN-ul in Firebase cu ID-ul tau
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  db.ref('pins/' + activePIN).set({ uid: myUserId, name: displayName, ts: Date.now() });
+  setTimeout(() => db.ref('pins/' + activePIN).remove(), 10 * 60 * 1000);
 }
 
 function updatePINTimer() {
@@ -1766,23 +1762,24 @@ function afPinTyped(el) {
 function acceptPIN() {
   const entered = document.getElementById('afPinInput').value;
   const st = document.getElementById('afPinStatus');
-  if (!activePIN) {
-    // Nu există PIN generat de nimeni — simulăm găsire
-    const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.'][Math.floor(Math.random()*4)];
-    pendingFriend = { name: fakeName, id: 'TR'+entered };
-    showConfirmAdd(fakeName, 'prin PIN ' + entered);
-    return;
-  }
-  if (entered === activePIN && Date.now() < activePINExpiry) {
-    st.textContent = '✓ PIN valid!'; st.style.color = 'var(--t-green)';
-    const fakeName = ['Andrei M.','Elena V.','Bogdan T.','Maria C.'][Math.floor(Math.random()*4)];
-    pendingFriend = { name: fakeName, id: 'TR'+entered };
-    setTimeout(() => showConfirmAdd(fakeName, 'prin PIN'), 500);
-  } else {
+  if (!activePIN || entered !== activePIN || Date.now() >= activePINExpiry) {
     st.textContent = '✗ PIN invalid sau expirat'; st.style.color = 'var(--t-red)';
     document.getElementById('afPinInput').value = '';
     document.getElementById('afPinBtn').disabled = true;
+    return;
   }
+  st.textContent = '✓ PIN valid!'; st.style.color = 'var(--t-green)';
+  // Asteapta ca celalalt utilizator sa confirme prin Firebase
+  st.textContent = '⏳ Se caută utilizatorul...';
+  db.ref('pins/' + entered).once('value', snap => {
+    if (snap.exists()) {
+      const data = snap.val();
+      pendingFriend = { name: data.name || 'Prieten', id: data.uid };
+      showConfirmAdd(pendingFriend.name, 'prin PIN');
+    } else {
+      st.textContent = '✗ PIN-ul nu a fost găsit'; st.style.color = 'var(--t-red)';
+    }
+  });
 }
 
 // ── CONFIRMARE & ADĂUGARE ──
