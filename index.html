@@ -546,7 +546,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="t-brand-ver">v3.0 · secure</div>
       </div>
       <div class="t-btn-row">
-        <button class="hide-btn" onclick="enableShake()" id="shakeBtn">📳 Shake</button>
+        <button class="hide-btn" onclick="enableShake()" id="shakeBtn">⚡ Auto-disp</button>
         <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
         <button class="panic-btn" onclick="panicMode()">🚨 Panic</button>
       </div>
@@ -933,6 +933,7 @@ function enableShake() {
   if (shakeEnabled) return;
   function startListen() {
     shakeEnabled = true;
+    document.getElementById('shakeBtn').textContent = '✓ Auto-disp';
     window.addEventListener('devicemotion', function(e) {
       if (!shakeEnabled) return;
       var a = e.accelerationIncludingGravity || e.acceleration;
@@ -954,12 +955,11 @@ function enableShake() {
   }
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     DeviceMotionEvent.requestPermission().then(function(r) {
-      if (r === 'granted') { startListen(); showShakeToast('✓ Shake activat!'); }
+      if (r === 'granted') { startListen(); }
       else { showShakeToast('✗ Permisiune refuzată'); }
     }).catch(function() { showShakeToast('✗ Eroare'); });
   } else {
     startListen();
-    showShakeToast('✓ Shake activat!');
   }
 }
 
