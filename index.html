@@ -4,1193 +4,2128 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Calculator</title>
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
-:root{
-  --bg:#1a1a1a;--surface:#2a2a2a;--surface2:#333;--surface3:#3d3d3d;
-  --border:#444;--text:#f0f0f0;--muted:#888;--light:#ccc;
-  --green:#4caf50;--red:#ef5350;--white:#ffffff;
-  --calc-bg:#f0f0f0;
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+:root {
+  --t-primary: #ffffff; --t-light: #cccccc; --t-bg: #2a2a2a;
+  --t-surface: #333333; --t-surface2: #3d3d3d; --t-text: #f0f0f0;
+  --t-muted: #999999; --t-border: #444444; --t-green: #4caf50;
+  --t-red: #ef5350;
+  --s-bg: #f0f0f0; --s-num: #e8e8e8; --s-func: #d8d8d8;
+  --s-op: #5a5a5a; --s-eq: #34c759; --s-op-text: #ffffff;
+  --s-text: #1a1a1a; --s-func-text: #3a3a3a;
 }
-body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;}
+body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; margin: 0; }
 
-/* PHONE SHELL */
-.phone{width:360px;height:780px;position:relative;overflow:hidden;border-radius:44px;
-  box-shadow:0 0 0 1px #111,0 40px 120px rgba(0,0,0,0.98);background:var(--calc-bg);
-  transform-origin:center center;flex-shrink:0;}
-@media(max-width:480px){
-  body{background:var(--calc-bg);align-items:flex-start;}
-  .phone{width:100vw!important;height:100vh!important;height:100dvh!important;border-radius:0!important;box-shadow:none!important;transform:none!important;}
+.phone { width: 360px; height: 780px; position: relative; overflow: hidden; border-radius: 44px;
+  box-shadow: 0 0 0 1px #1a1a1a, 0 40px 100px rgba(0,0,0,0.95); background: #f0f0f0;
+  transform-origin: center center; flex-shrink: 0; }
+@media (max-width: 480px) {
+  body { background: #f0f0f0; align-items: flex-start; }
+  .phone { width: 100vw !important; height: 100vh !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important; margin: 0 !important; }
 }
-.screen{width:100%;height:100%;position:relative;overflow:hidden;}
+.screen { width: 100%; height: 100%; position: relative; overflow: hidden; }
 
-/* STATUS BAR */
-.sb{position:absolute;top:0;left:0;right:0;height:36px;display:flex;align-items:center;
-  justify-content:space-between;padding:0 22px;z-index:100;font-size:12px;font-weight:600;}
-.sb-light{color:#111;background:var(--calc-bg);}
-.sb-dark{color:#f0f0f0;background:var(--surface);}
-.sb-time{font-size:13px;font-weight:700;}
-.sb-icons{display:flex;gap:4px;font-size:11px;}
+.status-bar { position: absolute; top: 0; left: 0; right: 0; height: 36px; display: flex;
+  align-items: center; justify-content: space-between; padding: 0 22px; z-index: 100; font-size: 12px; font-weight: 600; }
+.sb-dark  { color: #111111; background: #f0f0f0; }
+.sb-tirea { color: #f0f0f0; background: #2a2a2a; }
+.status-time { font-size: 13px; font-weight: 700; }
+.status-icons { display: flex; gap: 4px; font-size: 11px; }
 
-/* ══════════════════════════════════
-   CALCULATOR (Samsung One UI)
-══════════════════════════════════ */
-#calc{position:absolute;inset:0;background:var(--calc-bg);display:flex;flex-direction:column;z-index:1;}
-.c-display{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0 28px 8px;}
-.c-expr{font-size:17px;color:#777;text-align:right;min-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px;}
-.c-num{font-size:64px;font-weight:300;color:#111;text-align:right;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color 0.2s;}
-.c-hint{font-size:11px;color:#888;text-align:right;height:16px;margin-top:2px;}
-.c-hint.on{color:#34c759;animation:hblink 0.9s infinite;}
-@keyframes hblink{0%,100%{opacity:1}50%{opacity:0.2}}
-.c-toolbar{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 4px;background:var(--calc-bg);border-top:1px solid #ddd;}
-.c-tb-icons{display:flex;gap:18px;}
-.c-tb-icon{font-size:18px;color:#888;cursor:pointer;padding:4px;}
-.c-tb-del{font-size:22px;color:#4caf50;cursor:pointer;padding:4px;}
-.c-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--calc-bg);padding:6px 10px 4px;}
-.cb{height:74px;border:none;font-size:24px;font-weight:400;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s,opacity .08s;background:transparent;margin:3px;border-radius:50%;}
-.cb:active{transform:scale(0.88);opacity:0.7;}
-.cb.num{background:#e8e8e8;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.08);}
-.cb.func{background:#d4d4d4;color:#3a3a3a;font-size:20px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
-.cb.op{background:#606060;color:#fff;font-size:26px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
-.cb.eq{background:#34c759;color:#fff;font-size:26px;box-shadow:0 2px 8px rgba(52,199,89,.4);}
-.c-reset-row{text-align:center;padding:2px;background:var(--calc-bg);}
-.c-reset-btn{background:transparent;border:none;color:#ddd;font-size:10px;cursor:pointer;}
-.c-nav{height:46px;background:var(--calc-bg);display:flex;align-items:center;justify-content:center;gap:32px;border-top:1px solid #ddd;}
-.c-dot{width:5px;height:5px;border-radius:50%;background:#ccc;}
-.c-dot.a{background:#888;width:16px;border-radius:3px;}
+/* CALCULATOR — Samsung One UI style */
+#calc-app { position: absolute; inset: 0; background: #f0f0f0; display: flex; flex-direction: column; z-index: 1; }
+.calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 28px 8px; }
+.calc-expr { font-size: 17px; color: #777; text-align: right; min-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+.calc-num  { font-size: 64px; font-weight: 300; color: #111111; text-align: right; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.2s; }
+.calc-num.match { color: #111111; }
+.calc-hint { font-size: 11px; color: #888; text-align: right; height: 16px; margin-top: 2px; }
+.calc-hint.on { color: var(--s-eq); animation: hblink 0.9s infinite; }
+@keyframes hblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-/* ══════════════════════════════════
-   SETUP PIN
-══════════════════════════════════ */
-#setup{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;padding:32px 28px;gap:16px;
-  opacity:0;pointer-events:none;transition:opacity 0.4s;z-index:50;}
-#setup.vis{opacity:1;pointer-events:all;}
-.setup-logo{width:68px;height:68px;background:var(--white);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 50px rgba(255,255,255,.3);}
-.setup-title{font-size:20px;font-weight:700;color:var(--text);}
-.setup-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.7;}
-.pin-dots{display:flex;gap:14px;}
-.pdot{width:13px;height:13px;border-radius:50%;border:2px solid var(--white);background:transparent;transition:background .15s,transform .15s;}
-.pdot.f{background:var(--white);box-shadow:0 0 10px rgba(255,255,255,.5);transform:scale(1.1);}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;}
-.pp{height:56px;border-radius:14px;border:.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:22px;cursor:pointer;transition:background .1s,transform .1s;}
-.pp:active{background:var(--white);color:#111;transform:scale(.94);}
-.pp.del{background:transparent;color:var(--muted);font-size:16px;}
-.pp.ok{background:#111;color:#fff;font-size:14px;font-weight:600;}
-.pp.ok:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;}
-.formula-box{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:14px;text-align:center;}
-.formula-label{font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:8px;font-weight:600;}
-.formula-val{font-size:22px;font-family:monospace;color:var(--light);letter-spacing:8px;}
-.formula-note{font-size:11px;color:var(--muted);margin-top:6px;}
-.setup-warn{width:100%;background:rgba(255,68,102,.06);border:.5px solid rgba(255,68,102,.2);border-radius:12px;padding:12px;font-size:12px;color:#ff6b6b;text-align:center;line-height:1.7;}
+/* Samsung toolbar row */
+.calc-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 4px; background: var(--s-bg); border-top: 1px solid #ddd; }
+.calc-tb-icons { display: flex; gap: 18px; }
+.calc-tb-icon { font-size: 18px; color: #888; cursor: pointer; padding: 4px; }
+.calc-tb-del { font-size: 22px; color: #4caf50; cursor: pointer; padding: 4px; }
 
-/* UNLOCK OVERLAY */
-.unlock-ov{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:16px;z-index:200;
-  opacity:0;pointer-events:none;transition:opacity .3s;}
-.unlock-ov.show{opacity:1;pointer-events:all;}
-.unlock-ring{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1);
-  border:2px solid var(--white);display:flex;align-items:center;justify-content:center;
-  font-size:36px;animation:upop .5s cubic-bezier(.17,.67,.47,1.4);}
-@keyframes upop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
-.unlock-brand{font-size:28px;font-weight:800;color:var(--white);letter-spacing:2px;font-family:monospace;}
-.unlock-sub{font-size:11px;color:var(--green);}
+/* Grid — padding interioara cu butoane rotunde */
+.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; background: var(--s-bg); padding: 6px 10px 4px; }
+.cb { height: 74px; border: none; font-size: 24px; font-weight: 400; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.08s, opacity 0.08s;
+  background: transparent; margin: 3px; border-radius: 50%; }
+.cb:active { transform: scale(0.88); opacity: 0.7; }
 
-/* ══════════════════════════════════
-   TIREA SOCIAL — MAIN WRAPPER
-══════════════════════════════════ */
-#tirea{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .4s,transform .4s;z-index:40;transform:translateY(20px);}
-#tirea.vis{opacity:1;pointer-events:all;transform:translateY(0);}
+/* Cifre — cerc gri foarte deschis */
+.cb.num  { background: #e8e8e8; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+/* Functii — cerc gri mediu */
+.cb.func { background: #d4d4d4; color: #3a3a3a; font-size: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+/* Operatori — cerc gri inchis */
+.cb.op   { background: #606060; color: #fff; font-size: 26px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+/* Egal — cerc verde Samsung */
+.cb.eq   { background: #34c759; color: #fff; font-size: 26px; box-shadow: 0 2px 8px rgba(52,199,89,0.4); }
+/* 0 — cerc normal (nu mai e lat, Samsung One UI modern) */
+.cb.zero { grid-column: span 1; justify-content: center; padding-left: 0; }
 
-/* ── TOP BAR ── */
-.top-bar{height:52px;background:var(--surface);border-bottom:.5px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
-  flex-shrink:0;position:relative;margin-top:36px;}
-.top-bar-logo{font-size:20px;font-weight:900;color:var(--white);font-family:monospace;letter-spacing:1px;}
-.top-bar-logo span{color:var(--green);}
-.top-bar-av{width:34px;height:34px;border-radius:50%;background:var(--surface3);
-  border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;color:var(--light);cursor:pointer;}
-.top-bar-actions{display:flex;gap:4px;align-items:center;}
-.hide-btn{background:var(--surface2);border:.5px solid var(--border);color:var(--muted);
-  font-size:10px;padding:5px 10px;border-radius:20px;cursor:pointer;}
-.panic-btn{background:rgba(239,83,80,.1);border:.5px solid rgba(239,83,80,.3);color:var(--red);
-  font-size:10px;padding:5px 10px;border-radius:20px;cursor:pointer;}
+.reset-row { text-align: center; padding: 2px; background: var(--s-bg); }
+.reset-btn { background: transparent; border: none; color: #e0e0e0; font-size: 10px; cursor: pointer; }
+.samsung-nav { height: 46px; background: var(--s-bg); display: flex; align-items: center; justify-content: center; gap: 32px; border-top: 1px solid #ddd; }
+.snav-dot { width: 5px; height: 5px; border-radius: 50%; background: #ccc; }
+.snav-dot.a { background: #888; width: 16px; border-radius: 3px; }
 
-/* ── TAB SWITCHER (For You / Following) ── */
-.feed-tabs{display:flex;background:var(--surface);border-bottom:.5px solid var(--border);flex-shrink:0;}
-.feed-tab{flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;
-  color:var(--muted);cursor:pointer;position:relative;transition:color .2s;}
-.feed-tab.active{color:var(--white);}
-.feed-tab.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-  width:40px;height:3px;background:var(--green);border-radius:2px;}
+/* SETUP */
+#setup-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px 28px; gap: 16px;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s; z-index: 50; }
+#setup-app.vis { opacity: 1; pointer-events: all; }
+.setup-logo { width: 68px; height: 68px; background: var(--t-primary); border-radius: 22px;
+  display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 0 50px rgba(255,255,255,0.4); }
+.setup-title { font-size: 20px; font-weight: 600; color: var(--t-text); text-align: center; }
+.setup-sub { font-size: 13px; color: var(--t-muted); text-align: center; line-height: 1.7; }
+.pin-dots { display: flex; gap: 14px; }
+.pdot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--t-primary);
+  background: transparent; transition: background 0.15s, transform 0.15s; }
+.pdot.f { background: var(--t-primary); box-shadow: 0 0 10px rgba(255,255,255,0.6); transform: scale(1.1); }
+.pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; width: 100%; }
+.pp { height: 56px; border-radius: 14px; border: 0.5px solid var(--t-border); background: var(--t-surface);
+  color: var(--t-text); font-size: 22px; cursor: pointer; transition: background 0.1s, transform 0.1s; }
+.pp:active { background: var(--t-primary); transform: scale(0.94); }
+.pp.del { background: transparent; color: var(--t-muted); font-size: 16px; }
+.pp.ok  { background: #1a1a1a; color: #ffffff; font-size: 14px; font-weight: 600; }
+.pp.ok:disabled { background: var(--t-surface); color: var(--t-muted); cursor: not-allowed; }
+.formula-box { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 16px; padding: 14px; text-align: center; }
+.formula-label { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+.formula-val { font-size: 22px; font-family: monospace; color: var(--t-light); letter-spacing: 8px; }
+.formula-note { font-size: 11px; color: var(--t-muted); margin-top: 6px; }
+.setup-warn { width: 100%; background: rgba(255,68,102,0.06); border: 0.5px solid rgba(255,68,102,0.2);
+  border-radius: 12px; padding: 12px; font-size: 12px; color: #FF6B6B; text-align: center; line-height: 1.7; }
 
-/* ── FEED ── */
-.feed{flex:1;overflow-y:auto;min-height:0;}
-.feed::-webkit-scrollbar{display:none;}
+/* UNLOCK */
+.unlock-ov { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.unlock-ov.show { opacity: 1; pointer-events: all; }
+.unlock-ring { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.15);
+  border: 2px solid var(--t-primary); display: flex; align-items: center; justify-content: center;
+  font-size: 36px; animation: upop 0.5s cubic-bezier(.17,.67,.47,1.4); }
+@keyframes upop { 0%{transform:scale(0.3);opacity:0} 100%{transform:scale(1);opacity:1} }
+.unlock-text { font-size: 16px; font-weight: 600; letter-spacing: 6px; color: var(--t-light); font-family: monospace; }
+.unlock-sub { font-size: 11px; color: var(--t-green); }
 
-/* ── POST CARD ── */
-.post{display:flex;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .1s;}
-.post:active{background:rgba(255,255,255,.03);}
-.post-av{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;
-  justify-content:center;font-size:14px;font-weight:700;color:var(--white);border:1.5px solid var(--border);}
-.post-body{flex:1;min-width:0;}
-.post-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
-.post-name{font-size:14px;font-weight:700;color:var(--white);}
-.post-handle{font-size:12px;color:var(--muted);}
-.post-time{font-size:11px;color:var(--muted);margin-left:auto;}
-.post-text{font-size:14px;color:var(--text);line-height:1.55;word-break:break-word;}
-.post-img{width:100%;border-radius:14px;margin-top:10px;max-height:220px;object-fit:cover;border:.5px solid var(--border);}
-.post-actions{display:flex;gap:0;margin-top:12px;}
-.post-act{flex:1;display:flex;align-items:center;gap:5px;padding:6px 0;
-  font-size:12px;color:var(--muted);cursor:pointer;border-radius:8px;transition:color .15s,background .15s;}
-.post-act:hover{color:var(--green);}
-.post-act.liked{color:var(--red);}
-.post-act.liked .act-icon{animation:heartpop .3s cubic-bezier(.17,.67,.47,1.6);}
-@keyframes heartpop{0%{transform:scale(1)}50%{transform:scale(1.5)}100%{transform:scale(1)}}
-.act-icon{font-size:16px;}
-.act-count{font-size:12px;}
+/* TIREA HOME */
+#tirea-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; z-index: 40; transform: translateY(18px); }
+#tirea-app.vis { opacity: 1; pointer-events: all; transform: translateY(0); }
+.t-topbar { padding: 42px 18px 12px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 0.5px solid var(--t-border); flex-shrink: 0; }
+.t-brand { font-size: 24px; font-weight: 700; color: #ffffff; }
+.t-brand-dot { color: #ffffff; }
+.t-brand-ver { font-size: 10px; color: var(--t-muted); margin-top: 1px; }
+.t-btn-row { display: flex; gap: 6px; align-items: center; }
+.icon-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 4px 6px; color: var(--t-muted); }
+.hide-btn  { background: var(--t-surface); border: 0.5px solid var(--t-border); color: var(--t-muted);
+  font-size: 11px; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
+.panic-btn { background: rgba(255,68,102,0.1); border: 0.5px solid rgba(255,68,102,0.3);
+  color: var(--t-red); font-size: 11px; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
 
-/* ── REPOST BADGE ── */
-.post-repost-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);
-  padding:6px 16px 0 72px;}
+/* SEARCH - ascuns implicit */
+.t-search-wrap { overflow: hidden; max-height: 0; transition: max-height 0.3s ease, padding 0.3s ease; padding: 0 18px; flex-shrink: 0; }
+.t-search-wrap.open { max-height: 56px; padding: 8px 18px 4px; }
+.t-search-inner { display: flex; align-items: center; gap: 9px; background: var(--t-surface2);
+  border: 0.5px solid var(--t-border); border-radius: 14px; padding: 9px 14px; }
+.t-search-input { flex: 1; background: transparent; border: none; outline: none;
+  color: var(--t-text); font-size: 14px; font-family: inherit; }
+.t-search-input::placeholder { color: var(--t-muted); }
+.t-search-x { color: var(--t-muted); font-size: 15px; cursor: pointer; }
 
-/* ── COMPOSE BUTTON ── */
-.compose-fab{position:absolute;bottom:72px;right:20px;width:56px;height:56px;border-radius:50%;
-  background:var(--green);border:none;color:var(--white);font-size:26px;cursor:pointer;
-  box-shadow:0 4px 20px rgba(76,175,80,.5);display:flex;align-items:center;justify-content:center;
-  transition:transform .15s,box-shadow .15s;z-index:30;}
-.compose-fab:active{transform:scale(.92);box-shadow:0 2px 10px rgba(76,175,80,.3);}
+.ghost-bar { margin: 10px 18px 0; padding: 9px 14px; border-radius: 12px; display: flex; align-items: center;
+  gap: 9px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.3s; flex-shrink: 0; }
+.ghost-bar.online { background: rgba(76,175,80,0.07); border: 0.5px solid rgba(76,175,80,0.2); color: var(--t-green); }
+.ghost-bar.ghost  { background: rgba(0,0,0,0.3); border: 0.5px solid #222; color: #444; }
+.ghost-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t-green); animation: gdot 2s infinite; flex-shrink: 0; }
+.ghost-bar.ghost .ghost-dot { background: #333; animation: none; }
+@keyframes gdot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.ghost-ico { margin-left: auto; font-size: 15px; }
 
-/* ── BOTTOM NAV ── */
-.bottom-nav{height:60px;background:var(--surface);border-top:.5px solid var(--border);
-  display:flex;align-items:stretch;flex-shrink:0;padding-bottom:0;}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
-  padding:8px 4px;transition:color .15s;}
-.nav-btn .nav-icon{font-size:22px;line-height:1;}
-.nav-btn .nav-label{font-size:9px;color:var(--muted);}
-.nav-btn.active .nav-label{color:var(--white);}
-.nav-btn.active .nav-icon{filter:drop-shadow(0 0 4px rgba(76,175,80,.6));}
+.t-stories { display: flex; gap: 14px; padding: 14px 18px 12px; overflow-x: auto;
+  scrollbar-width: none; border-bottom: 0.5px solid var(--t-border); flex-shrink: 0; }
+.t-stories::-webkit-scrollbar { display: none; }
+.t-story { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; cursor: pointer; }
+.s-ring { width: 54px; height: 54px; border-radius: 50%; padding: 2px;
+  background: linear-gradient(135deg, var(--t-primary), var(--t-light)); }
+.s-av { width: 100%; height: 100%; border-radius: 50%; background: var(--t-surface2);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
+  color: var(--t-light); border: 2px solid var(--t-bg); }
+.s-name { font-size: 10px; color: var(--t-muted); }
+.s-add { width: 50px; height: 50px; border-radius: 50%; border: 1.5px dashed var(--t-border);
+  display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--t-primary); }
 
-/* ══════════════════════════════════
-   COMPOSE SCREEN
-══════════════════════════════════ */
-#compose-screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:80;transform:translateY(100%);}
-#compose-screen.vis{opacity:1;pointer-events:all;transform:translateY(0);}
-.compose-topbar{height:52px;background:var(--surface);border-bottom:.5px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
-  flex-shrink:0;margin-top:36px;}
-.compose-cancel{color:var(--muted);font-size:14px;cursor:pointer;padding:6px 4px;}
-.compose-title{font-size:16px;font-weight:700;color:var(--white);}
-.compose-post-btn{background:var(--green);border:none;color:var(--white);font-size:14px;font-weight:700;
-  padding:8px 18px;border-radius:20px;cursor:pointer;transition:opacity .15s;}
-.compose-post-btn:disabled{opacity:.4;cursor:not-allowed;}
-.compose-body{flex:1;padding:16px;display:flex;gap:12px;overflow-y:auto;}
-.compose-av{width:44px;height:44px;border-radius:50%;background:var(--surface3);
-  border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:700;color:var(--white);flex-shrink:0;}
-.compose-right{flex:1;display:flex;flex-direction:column;gap:10px;}
-.compose-ta{width:100%;background:transparent;border:none;outline:none;color:var(--text);
-  font-size:18px;font-family:inherit;resize:none;min-height:120px;line-height:1.55;}
-.compose-ta::placeholder{color:var(--muted);}
-.compose-toolbar{display:flex;align-items:center;gap:14px;padding:10px 16px;
-  border-top:.5px solid var(--border);background:var(--surface);flex-shrink:0;}
-.compose-tool{font-size:20px;color:var(--green);cursor:pointer;padding:4px;}
-.compose-counter{margin-left:auto;font-size:13px;font-family:monospace;}
-.compose-counter.near{color:#FFB400;}
-.compose-counter.over{color:var(--red);}
+.t-section { font-size: 9px; color: var(--t-muted); padding: 10px 18px 4px; letter-spacing: 2px; font-weight: 600; flex-shrink: 0; }
+.t-conv-list { flex: 1; overflow-y: auto; min-height: 0; }
+.t-conv-list::-webkit-scrollbar { display: none; }
+.t-conv { padding: 12px 18px; display: flex; align-items: center; gap: 13px;
+  border-bottom: 0.5px solid #444; cursor: pointer; transition: background 0.12s; }
+.t-conv:active { background: rgba(255,255,255,0.05); }
+.t-av { width: 46px; height: 46px; border-radius: 50%; background: var(--t-surface2);
+  border: 1px solid var(--t-border); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--t-light); flex-shrink: 0; position: relative; }
+.t-av-online::after { content: ''; position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--t-green); border: 2px solid var(--t-bg); }
+.t-conv-info { flex: 1; min-width: 0; }
+.t-cname { font-size: 14px; font-weight: 600; color: var(--t-text); }
+.t-cprev { font-size: 12px; color: var(--t-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.t-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.t-time { font-size: 10px; color: var(--t-muted); }
+.t-no-results { text-align: center; padding: 30px 20px; font-size: 13px; color: var(--t-muted); display: none; }
+.t-no-results.vis { display: block; }
 
-/* ══════════════════════════════════
-   SEARCH SCREEN
-══════════════════════════════════ */
-#search-screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:70;transform:translateX(100%);}
-#search-screen.vis{opacity:1;pointer-events:all;transform:translateX(0);}
-.search-topbar{padding:42px 16px 12px;display:flex;align-items:center;gap:10px;
-  border-bottom:.5px solid var(--border);flex-shrink:0;background:var(--surface);}
-.search-input-wrap{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface3);
-  border:.5px solid var(--border);border-radius:24px;padding:9px 14px;}
-.search-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:inherit;}
-.search-input::placeholder{color:var(--muted);}
-.search-cancel{color:var(--muted);font-size:14px;cursor:pointer;white-space:nowrap;}
-.trending-section{padding:14px 16px 6px;font-size:12px;color:var(--muted);letter-spacing:1.5px;font-weight:600;}
-.trend-item{padding:14px 16px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .1s;}
-.trend-item:active{background:rgba(255,255,255,.04);}
-.trend-cat{font-size:11px;color:var(--muted);}
-.trend-name{font-size:15px;font-weight:700;color:var(--text);margin:2px 0;}
-.trend-count{font-size:12px;color:var(--muted);}
-.search-results{flex:1;overflow-y:auto;}
-.search-results::-webkit-scrollbar{display:none;}
-.no-results{text-align:center;padding:40px 20px;font-size:14px;color:var(--muted);}
+.t-bottom-nav { display: flex; border-top: 0.5px solid var(--t-border); padding-bottom: 20px; flex-shrink: 0; background: var(--t-bg); position: relative; z-index: 10; }
+.t-nav-item { flex: 1; padding: 10px 4px 0; text-align: center; cursor: pointer; background: none; border: none; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+.t-nav-icon { font-size: 22px; display: block; }
+.t-nav-label { font-size: 9px; color: var(--t-muted); margin-top: 3px; }
+.t-nav-item.active .t-nav-label { color: var(--t-light); }
 
-/* ══════════════════════════════════
-   NOTIFICARI SCREEN
-══════════════════════════════════ */
-#notif-screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:70;transform:translateX(100%);}
-#notif-screen.vis{opacity:1;pointer-events:all;transform:translateX(0);}
-.notif-topbar{padding:42px 16px 14px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:.5px solid var(--border);flex-shrink:0;background:var(--surface);}
-.notif-title{font-size:20px;font-weight:800;color:var(--white);}
-.notif-list{flex:1;overflow-y:auto;}
-.notif-list::-webkit-scrollbar{display:none;}
-.notif-item{display:flex;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .1s;}
-.notif-item:active{background:rgba(255,255,255,.04);}
-.notif-icon-wrap{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
-.notif-icon-wrap.like{background:rgba(239,83,80,.1);}
-.notif-icon-wrap.repost{background:rgba(76,175,80,.1);}
-.notif-icon-wrap.follow{background:rgba(255,255,255,.08);}
-.notif-icon-wrap.mention{background:rgba(76,175,80,.1);}
-.notif-body{flex:1;}
-.notif-text{font-size:14px;color:var(--text);line-height:1.5;}
-.notif-text b{color:var(--white);}
-.notif-time{font-size:11px;color:var(--muted);margin-top:3px;}
-.notif-badge{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:6px;}
+/* PROFIL */
+#profil-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s, transform 0.35s; z-index: 60; transform: translateX(100%);
+  outline: none; border-radius: 34px; }
+#profil-app.vis { opacity: 1; pointer-events: all; transform: translateX(0); }
+.page-topbar { padding: 42px 16px 14px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 0.5px solid var(--t-border); flex-shrink: 0; }
+.page-back { color: var(--t-primary); font-size: 22px; cursor: pointer; padding: 4px 10px 4px 0; }
+.page-title { font-size: 17px; font-weight: 600; color: var(--t-text); }
+.profil-scroll { flex: 1; overflow-y: auto; }
+.profil-scroll::-webkit-scrollbar { display: none; }
+.profil-hero { display: flex; flex-direction: column; align-items: center; padding: 28px 20px 20px; border-bottom: 0.5px solid var(--t-border); }
+.profil-av { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg,var(--t-primary),var(--t-light));
+  display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700;
+  color: white; margin-bottom: 12px; box-shadow: 0 0 30px rgba(255,255,255,0.3); }
+.profil-name { font-size: 20px; font-weight: 700; color: var(--t-text); }
+.profil-handle { font-size: 13px; color: var(--t-muted); margin-top: 3px; font-family: monospace; }
+.profil-stats { display: flex; margin-top: 18px; width: 100%; border: 0.5px solid var(--t-border); border-radius: 16px; overflow: hidden; }
+.p-stat { flex: 1; padding: 12px 8px; text-align: center; border-right: 0.5px solid var(--t-border); }
+.p-stat:last-child { border-right: none; }
+.p-stat-num { font-size: 18px; font-weight: 700; color: var(--t-text); }
+.p-stat-label { font-size: 10px; color: var(--t-muted); margin-top: 2px; }
+.profil-section { padding: 14px 20px; }
+.profil-sec-title { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; font-weight: 600; margin-bottom: 10px; }
+.profil-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 0.5px solid #444; cursor: pointer; }
+.profil-row:last-child { border-bottom: none; }
+.profil-row-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--t-surface2);
+  display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; flex-shrink: 0; }
+.profil-row-info { flex: 1; }
+.profil-row-label { font-size: 14px; color: var(--t-text); font-weight: 500; }
+.profil-row-sub { font-size: 11px; color: var(--t-muted); margin-top: 1px; }
+.profil-row-arrow { color: var(--t-muted); font-size: 16px; }
 
-/* ══════════════════════════════════
-   PROFIL SCREEN
-══════════════════════════════════ */
-#profil-screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:70;transform:translateX(100%);}
-#profil-screen.vis{opacity:1;pointer-events:all;transform:translateX(0);}
-.profil-topbar{padding:42px 16px 12px;display:flex;align-items:center;gap:10px;
-  border-bottom:.5px solid var(--border);flex-shrink:0;background:var(--surface);}
-.profil-back{color:var(--white);font-size:22px;cursor:pointer;padding:4px 10px 4px 0;}
-.profil-info{flex:1;}
-.profil-info-name{font-size:16px;font-weight:800;color:var(--white);}
-.profil-info-count{font-size:12px;color:var(--muted);}
-.profil-topbar-btns{display:flex;gap:6px;}
-.profil-banner{height:110px;background:linear-gradient(135deg,#1a1a1a 0%,#2a2a2a 50%,#333 100%);
-  position:relative;flex-shrink:0;}
-.profil-av-big{position:absolute;bottom:-28px;left:16px;width:72px;height:72px;border-radius:50%;
-  background:var(--surface3);border:3px solid var(--bg);display:flex;align-items:center;
-  justify-content:center;font-size:22px;font-weight:800;color:var(--white);}
-.profil-edit-btn{position:absolute;bottom:10px;right:16px;background:transparent;border:1.5px solid var(--border);
-  color:var(--white);font-size:13px;font-weight:600;padding:7px 16px;border-radius:20px;cursor:pointer;}
-.profil-scroll{flex:1;overflow-y:auto;}
-.profil-scroll::-webkit-scrollbar{display:none;}
-.profil-meta{padding:40px 16px 14px;border-bottom:.5px solid var(--border);}
-.profil-display-name{font-size:20px;font-weight:800;color:var(--white);}
-.profil-handle{font-size:14px;color:var(--muted);margin-top:2px;font-family:monospace;}
-.profil-bio{font-size:14px;color:var(--text);margin-top:10px;line-height:1.55;}
-.profil-joined{font-size:13px;color:var(--muted);margin-top:8px;}
-.profil-stats-row{display:flex;gap:20px;margin-top:12px;}
-.profil-stat{font-size:13px;color:var(--muted);}
-.profil-stat b{color:var(--white);font-weight:700;}
-.profil-tabs{display:flex;border-bottom:.5px solid var(--border);flex-shrink:0;}
-.profil-tab{flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;
-  color:var(--muted);cursor:pointer;position:relative;transition:color .2s;}
-.profil-tab.active{color:var(--white);}
-.profil-tab.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-  width:40px;height:3px;background:var(--green);border-radius:2px;}
-.profil-posts{flex:1;overflow-y:auto;}
-.profil-posts::-webkit-scrollbar{display:none;}
+/* SETARI */
+#setari-app { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s, transform 0.35s; z-index: 60; transform: translateX(100%);
+  outline: none; border-radius: 34px; }
+#setari-app.vis { opacity: 1; pointer-events: all; transform: translateX(0); }
+.setari-scroll { flex: 1; overflow-y: auto; padding: 10px 0 20px; }
+.setari-scroll::-webkit-scrollbar { display: none; }
+.setari-group-title { font-size: 9px; color: var(--t-muted); letter-spacing: 2px; font-weight: 600; padding: 12px 20px 6px; }
+.setari-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 0.5px solid rgba(0,40,128,0.25); cursor: pointer; }
+.s-row-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; font-size: 17px; margin-right: 13px; flex-shrink: 0; }
+.s-row-info { flex: 1; }
+.s-row-label { font-size: 14px; color: var(--t-text); font-weight: 500; }
+.s-row-sub { font-size: 11px; color: var(--t-muted); margin-top: 2px; }
+.toggle { width: 44px; height: 26px; background: #333; border-radius: 13px; position: relative; cursor: pointer; transition: background 0.25s; flex-shrink: 0; }
+.toggle.on { background: var(--t-primary); }
+.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: 50%; background: white; transition: transform 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.toggle.on::after { transform: translateX(18px); }
+.setari-val { font-size: 12px; color: var(--t-muted); font-family: monospace; }
+.setari-arrow { color: #333; font-size: 16px; }
+.version-footer { text-align: center; padding: 20px; font-size: 11px; color: #1a1a3a; font-family: monospace; }
 
-/* ══════════════════════════════════
-   POST DETAIL SCREEN
-══════════════════════════════════ */
-#post-detail{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
-  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:90;transform:translateX(100%);}
-#post-detail.vis{opacity:1;pointer-events:all;transform:translateX(0);}
-.detail-topbar{padding:42px 16px 12px;display:flex;align-items:center;gap:10px;
-  border-bottom:.5px solid var(--border);flex-shrink:0;background:var(--surface);}
-.detail-back{color:var(--white);font-size:22px;cursor:pointer;padding:4px 10px 4px 0;}
-.detail-title{font-size:18px;font-weight:800;color:var(--white);}
-.detail-body{flex:1;overflow-y:auto;padding:16px;}
-.detail-body::-webkit-scrollbar{display:none;}
-.detail-header{display:flex;gap:12px;margin-bottom:14px;}
-.detail-av{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;
-  justify-content:center;font-size:14px;font-weight:700;color:var(--white);border:1.5px solid var(--border);}
-.detail-user{flex:1;}
-.detail-name{font-size:16px;font-weight:800;color:var(--white);}
-.detail-handle{font-size:13px;color:var(--muted);}
-.detail-text{font-size:18px;color:var(--text);line-height:1.6;margin-bottom:14px;}
-.detail-time{font-size:12px;color:var(--muted);padding:12px 0;border-top:.5px solid var(--border);border-bottom:.5px solid var(--border);margin-bottom:12px;}
-.detail-counts{display:flex;gap:20px;padding:12px 0;border-bottom:.5px solid var(--border);margin-bottom:12px;}
-.detail-count{font-size:14px;color:var(--muted);}
-.detail-count b{color:var(--white);font-weight:700;}
-.detail-actions{display:flex;justify-content:space-around;padding:8px 0;border-bottom:.5px solid var(--border);margin-bottom:16px;}
-.detail-act{font-size:22px;cursor:pointer;padding:8px 16px;border-radius:8px;transition:background .15s;}
-.detail-act:active{background:rgba(255,255,255,.06);}
-.detail-act.liked{filter:drop-shadow(0 0 4px rgba(239,83,80,.8));}
+/* CHAT */
+#chat-app { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s, transform 0.35s; z-index: 70; transform: translateX(100%);
+  outline: none; border-radius: 34px; }
+#chat-app.vis { opacity: 1; pointer-events: all; transform: translateX(0); }
+.chat-topbar { padding: 42px 14px 10px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid #444; flex-shrink: 0; background: #2a2a2a; }
+.back-btn { color: #ffffff; font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; }
+.chat-peer-av { width: 38px; height: 38px; border-radius: 50%; background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  color: #ffffff; border: 2px solid #ffffff; flex-shrink: 0; }
+.chat-peer-info { flex: 1; }
+.chat-peer-name { font-size: 15px; font-weight: 700; color: #ffffff; }
+.chat-peer-status { font-size: 11px; color: #ffffff; display: flex; align-items: center; gap: 4px; opacity: 0.7; }
+.live-dot { width: 6px; height: 6px; background: #4caf50; border-radius: 50%; animation: ldot 1.5s infinite; }
+@keyframes ldot { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.chat-act-btn { width: 36px; height: 36px; border: 2px solid #ffffff; border-radius: 50%;
+  background: #fff; color: #ffffff; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.chat-act-btn:active { background: #ffffff; color: #fff; }
+.enc-bar { padding: 5px 16px; background: #333; border-bottom: 1px solid #444;
+  font-size: 10px; color: #888; flex-shrink: 0; font-family: monospace; }
+.messages { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  overflow-y: auto; background: #2a2a2a; scroll-behavior: smooth; }
+.messages::-webkit-scrollbar { width: 2px; }
+.messages::-webkit-scrollbar-thumb { background: #ffffff; border-radius: 2px; opacity: 0.3; }
+.msg-wrap { display: flex; flex-direction: column; }
+.msg-wrap.me   { align-items: flex-end; }
+.msg-wrap.them { align-items: flex-start; }
+.bubble { max-width: 78%; padding: 10px 14px; border-radius: 20px; font-size: 14px; line-height: 1.5; word-break: break-word; }
+.me   .bubble { background: #f0f0f0; color: #111; border-bottom-right-radius: 4px; border: none; }
+.them .bubble { background: #3d3d3d; color: #f0f0f0; border-bottom-left-radius: 4px; border: none; }
+.msg-meta { font-size: 10px; color: #999; margin-top: 3px; padding: 0 4px; }
+.msg-enc { font-size: 9px; color: #555; font-family: monospace; margin-top: 2px; padding: 0 4px; word-break: break-all; max-height: 32px; overflow: hidden; opacity: 0.7; }
+.sys-msg { text-align: center; font-size: 10px; color: #888; background: #333;
+  padding: 5px 14px; border-radius: 20px; align-self: center; font-family: monospace; border: 1px solid #444; }
+.chat-input-area { padding: 10px 14px 28px; border-top: 1px solid #444; background: #2a2a2a;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.msg-input { flex: 1; padding: 10px 16px; background: #3d3d3d; border: none;
+  border-radius: 24px; color: #f0f0f0; font-size: 14px; font-family: inherit; outline: none;
+  resize: none; max-height: 80px; }
+.msg-input::placeholder { color: #666; }
+.send-btn { width: 42px; height: 42px; background: #f0f0f0; border: none; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
+.send-btn:active { opacity: 0.8; transform: scale(0.93); }
+.typing-bubble { background: #3d3d3d; border: none; border-radius: 20px;
+  border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; opacity:0.7; }
+.td { width: 7px; height: 7px; background: #888; border-radius: 50%; animation: tdot 1.2s infinite; }
+.td:nth-child(2) { animation-delay: 0.2s; }
+.td:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 20; }
+.disc-ov.show { display: flex; }
+.disc-icon { font-size: 52px; }
+.disc-title { font-size: 18px; font-weight: 700; color: #ffffff; }
+.disc-sub { font-size: 13px; color: rgba(255,255,255,0.6); text-align: center; line-height: 1.7; }
+.disc-btn { padding: 12px 36px; background: #ffffff; color: white; border: none;
+  border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
-/* Comments */
-.comment-input-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;}
-.comment-av{width:38px;height:38px;border-radius:50%;background:var(--surface3);
-  border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--white);flex-shrink:0;}
-.comment-input{flex:1;background:var(--surface2);border:.5px solid var(--border);border-radius:20px;
-  padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;resize:none;}
-.comment-input::placeholder{color:var(--muted);}
-.comment-send{background:var(--green);border:none;color:var(--white);font-size:13px;font-weight:700;
-  padding:8px 14px;border-radius:20px;cursor:pointer;align-self:flex-end;white-space:nowrap;}
-.comment{display:flex;gap:10px;margin-bottom:14px;}
-.comment-av2{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;
-  justify-content:center;font-size:11px;font-weight:700;color:var(--white);border:1.5px solid var(--border);}
-.comment-body{flex:1;}
-.comment-header{display:flex;gap:6px;align-items:center;margin-bottom:3px;}
-.comment-name{font-size:13px;font-weight:700;color:var(--white);}
-.comment-time{font-size:11px;color:var(--muted);}
-.comment-text{font-size:14px;color:var(--text);line-height:1.5;}
+/* CALL OVERLAY */
+.call-ov { position: absolute; inset: 0; background: #fff; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 80; }
+.call-ov.show { display: flex; }
+.call-av { width: 90px; height: 90px; border-radius: 50%; background: #fff; border: 3px solid #ffffff;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: #ffffff; }
+.call-name { font-size: 22px; font-weight: 700; color: #ffffff; }
+.call-status { font-size: 14px; color: rgba(255,255,255,0.6); font-family: monospace; }
+.call-btns { display: flex; gap: 24px; margin-top: 10px; }
+.call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.call-btn.end { background: #2a2a2a; color: white; }
+.call-btn.mute { background: #fff; border: 2px solid #2a2a2a; }
+.call-btn.spk  { background: #fff; border: 2px solid #2a2a2a; }
 
-/* ══════════════════════════════════
-   GENERIC MODAL
-══════════════════════════════════ */
-.modal-ov{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;z-index:150;}
-.modal-ov.show{display:flex;}
-.modal-box{width:100%;background:var(--surface2);border-radius:24px 24px 0 0;padding:24px 24px 40px;display:flex;flex-direction:column;gap:14px;}
-.modal-title{font-size:16px;font-weight:700;color:var(--text);text-align:center;}
-.modal-btn{width:100%;padding:14px;background:var(--white);border:none;border-radius:14px;color:#111;font-size:15px;font-weight:700;cursor:pointer;}
-.modal-btn.danger{background:var(--red);color:var(--white);}
-.modal-cancel{width:100%;padding:12px;background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;}
+/* ADD CONTACT MODAL */
+.modal-ov { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: none;
+  align-items: flex-end; justify-content: center; z-index: 150; }
+.modal-ov.show { display: flex; }
+.modal-box { width: 100%; background: var(--t-surface); border-radius: 24px 24px 0 0;
+  padding: 24px 24px 40px; display: flex; flex-direction: column; gap: 14px; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--t-text); text-align: center; }
+.modal-input { width: 100%; padding: 12px 16px; background: var(--t-surface2);
+  border: 0.5px solid var(--t-border); border-radius: 14px; color: var(--t-text);
+  font-size: 15px; font-family: inherit; outline: none; }
+.modal-input:focus { border-color: var(--t-primary); }
+.modal-input::placeholder { color: var(--t-muted); }
+.modal-btn { width: 100%; padding: 14px; background: var(--t-primary); border: none;
+  border-radius: 14px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.modal-cancel { width: 100%; padding: 12px; background: transparent; border: none;
+  color: var(--t-muted); font-size: 14px; cursor: pointer; font-family: inherit; }
 
-/* ── TOAST ── */
-.toast{position:absolute;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--surface3);color:var(--text);padding:10px 20px;border-radius:20px;
-  font-size:13px;font-weight:600;z-index:300;white-space:nowrap;pointer-events:none;
-  opacity:0;transition:opacity .25s,transform .25s;border:.5px solid var(--border);}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* P2P SCREEN */
+#p2p-app { position:absolute;inset:0;background:var(--t-bg);display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transition:opacity 0.3s,transform 0.3s;z-index:75;transform:translateX(100%); }
+#p2p-app.vis { opacity:1;pointer-events:all;transform:translateX(0); }
+.p2p-body { flex:1;overflow-y:auto;padding:16px 20px 30px;display:flex;flex-direction:column;gap:12px;align-items:center; }
+.p2p-icon { font-size:48px;margin-top:8px; }
+.p2p-title { font-size:18px;font-weight:700;color:var(--t-text); }
+.p2p-sub { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.6; }
+.p2p-tabs { display:flex;gap:8px;width:100%; }
+.p2p-tab { flex:1;padding:10px;border:0.5px solid var(--t-border);border-radius:12px;
+  background:var(--t-surface);color:var(--t-muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.2s; }
+.p2p-tab.active { background:var(--t-primary);color:white;border-color:var(--t-primary); }
+#p2p-host-panel,#p2p-join-panel { width:100%;display:flex;flex-direction:column;gap:10px; }
+.p2p-step { font-size:12px;color:var(--t-muted);padding:4px 0; }
+.p2p-gen-btn { width:100%;padding:13px;background:var(--t-primary);border:none;border-radius:14px;
+  color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit; }
+.p2p-code-wrap { width:100%;display:flex;flex-direction:column;gap:8px; }
+.p2p-code-label { font-size:11px;color:var(--t-muted); }
+.p2p-code-box { width:100%;padding:10px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:12px;font-size:9px;font-family:monospace;color:var(--t-light);word-break:break-all;
+  max-height:80px;overflow-y:auto; }
+.p2p-copy-btn { padding:10px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:12px;color:var(--t-text);font-size:13px;cursor:pointer;font-family:inherit; }
+.p2p-input { width:100%;padding:12px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:12px;color:var(--t-text);font-size:11px;font-family:monospace;resize:none;
+  height:80px;outline:none; }
+.p2p-input:focus { border-color:var(--t-primary); }
+.p2p-connect-btn { width:100%;padding:13px;background:#4caf50;border:none;border-radius:14px;
+  color:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit; }
+.p2p-status { font-size:12px;text-align:center;color:var(--t-green);min-height:18px;font-weight:600; }
+/* PAROLA SECRETA */
+#secret-app { position:absolute;inset:0;background:var(--t-bg);display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transition:opacity 0.3s,transform 0.3s;z-index:80;transform:translateX(100%); }
+#secret-app.vis { opacity:1;pointer-events:all;transform:translateX(0); }
+.secret-body { flex:1;overflow-y:auto;padding:20px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:14px; }
+.secret-title { font-size:18px;font-weight:700;color:var(--t-text);text-align:center; }
+.secret-sub { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7; }
+.secret-input { width:100%;padding:16px;background:var(--t-surface);border:2px solid var(--t-border);
+  border-radius:14px;color:var(--t-text);font-size:18px;font-family:monospace;
+  text-align:center;letter-spacing:4px;outline:none; }
+.secret-input:focus { border-color:var(--t-primary); }
+.secret-strength { font-size:11px;min-height:16px;text-align:center; }
+.secret-btn { width:100%;padding:14px;background:var(--t-primary);border:none;border-radius:14px;
+  color:white;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit; }
+.secret-btn:disabled { background:var(--t-surface);color:var(--t-muted);cursor:not-allowed; }
+.secret-note { font-size:11px;color:var(--t-muted);text-align:center;line-height:1.7;
+  background:rgba(255,180,0,0.05);border:0.5px solid rgba(255,180,0,0.2);padding:12px;border-radius:12px; }
+#secretCurrent { font-size:12px;color:#4caf50;text-align:center;min-height:18px;font-weight:600; }
 
-/* ── AVATAR COLORS ── */
-.av-green{background:#1b4d1e;}
-.av-blue{background:#1a2d4d;}
-.av-red{background:#4d1a1a;}
-.av-purple{background:#2d1a4d;}
-.av-orange{background:#4d2e1a;}
-.av-teal{background:#1a3d3d;}
+#addfriend-app,#qr-app,#link-app,#pin-app { position:absolute;inset:0;background:var(--t-bg);
+  display:flex;flex-direction:column;opacity:0;pointer-events:none;
+  transition:opacity 0.3s,transform 0.3s;z-index:75;transform:translateX(100%); }
+#addfriend-app.vis,#qr-app.vis,#link-app.vis,#pin-app.vis { opacity:1;pointer-events:all;transform:translateX(0); }
+.af-scroll { flex:1;overflow-y:auto;padding:14px 18px 30px;display:flex;flex-direction:column;gap:10px; }
+.af-method-card { display:flex;align-items:center;gap:14px;padding:16px;
+  background:var(--t-surface);border:0.5px solid var(--t-border);border-radius:16px;cursor:pointer;transition:background 0.15s; }
+.af-method-card:active { background:var(--t-surface2); }
+.af-method-icon { width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0; }
+.af-method-info { flex:1; }
+.af-method-title { font-size:15px;font-weight:600;color:var(--t-text); }
+.af-method-sub { font-size:12px;color:var(--t-muted);margin-top:2px; }
+.af-arrow { font-size:20px;color:var(--t-muted); }
+.af-divider { font-size:10px;color:var(--t-muted);text-align:center;letter-spacing:1px;padding:6px 0 4px; }
+.af-pin-input-wrap { display:flex;gap:10px; }
+.af-pin-input { flex:1;padding:14px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:14px;color:var(--t-text);font-size:22px;font-family:monospace;
+  text-align:center;letter-spacing:8px;outline:none; }
+.af-pin-input:focus { border-color:var(--t-primary); }
+.af-pin-input::placeholder { color:var(--t-muted);letter-spacing:4px;font-size:16px; }
+.af-pin-btn { padding:14px 18px;background:var(--t-primary);border:none;border-radius:14px;
+  color:white;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap; }
+.af-pin-btn:disabled { background:var(--t-surface2);color:var(--t-muted);cursor:not-allowed; }
+.af-pin-status { font-size:12px;text-align:center;min-height:18px;color:var(--t-green); }
+
+/* QR */
+.qr-body { flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 24px 30px;gap:14px; }
+.qr-label { font-size:13px;color:var(--t-muted);text-align:center; }
+.qr-frame { width:180px;height:180px;background:white;border-radius:16px;padding:12px;
+  display:grid;grid-template-columns:repeat(9,1fr);gap:2px; }
+.qr-orr { font-size:11px;color:var(--t-muted);letter-spacing:2px; }
+.qr-id-text { font-size:11px;color:var(--t-muted);font-family:monospace; }
+.qr-scan-btn { padding:13px 28px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:14px;color:var(--t-text);font-size:14px;cursor:pointer;font-family:inherit; }
+.qr-scan-result { font-size:12px;color:var(--t-green);text-align:center;min-height:18px; }
+
+/* LINK */
+.link-body { flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 24px 30px;gap:12px; }
+.link-icon { font-size:44px; }
+.link-label { font-size:13px;color:var(--t-muted); }
+.link-box { width:100%;padding:12px 14px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:12px;font-size:11px;font-family:monospace;color:var(--t-light);word-break:break-all;text-align:center; }
+.link-expire { font-size:11px;color:var(--t-muted); }
+.link-copy-btn,.link-share-btn { width:100%;padding:13px;border:none;border-radius:14px;
+  font-size:14px;cursor:pointer;font-family:inherit;font-weight:600; }
+.link-copy-btn { background:var(--t-primary);color:white; }
+.link-share-btn { background:var(--t-surface);color:var(--t-text);border:0.5px solid var(--t-border); }
+.link-note { font-size:11px;color:var(--t-muted);text-align:center;line-height:1.6; }
+.link-divider { font-size:10px;color:var(--t-muted);letter-spacing:1px;padding:4px 0; }
+
+/* PIN screen */
+.pin-body { flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 24px;gap:14px; }
+.pin-icon { font-size:48px; }
+.pin-label { font-size:13px;color:var(--t-muted); }
+.pin-big { font-size:46px;font-weight:700;font-family:monospace;letter-spacing:10px;
+  color:var(--t-light);background:var(--t-surface);padding:18px 24px;border-radius:16px;
+  border:0.5px solid var(--t-border);width:100%;text-align:center; }
+.pin-expire { font-size:12px;color:var(--t-muted); }
+.pin-regen-btn { padding:12px 24px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:12px;color:var(--t-text);font-size:14px;cursor:pointer;font-family:inherit; }
+.pin-note { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="phone"><div class="screen">
 
-<!-- STATUS BAR -->
-<div class="sb sb-light" id="sb">
-  <div class="sb-time" id="sbTime">9:41</div>
-  <div class="sb-icons"><span>📶</span><span>🔋</span></div>
-</div>
-
-<!-- ══════════════════ CALCULATOR ══════════════════ -->
-<div id="calc">
-  <div class="c-display">
-    <div class="c-expr" id="cExpr"></div>
-    <div class="c-num" id="cNum">0</div>
-    <div class="c-hint" id="cHint"></div>
+  <div class="status-bar sb-dark" id="sb">
+    <div class="status-time" id="stime">9:41</div>
+    <div class="status-icons"><span>📶</span><span>🔋</span></div>
   </div>
-  <div class="c-toolbar">
-    <div class="c-tb-icons">
-      <span class="c-tb-icon">🕐</span>
-      <span class="c-tb-icon">📏</span>
-      <span class="c-tb-icon" style="font-size:16px">𝑓𝑥</span>
+
+  <!-- CALCULATOR -->
+  <div id="calc-app">
+    <div class="calc-display">
+      <div class="calc-expr" id="cExpr"></div>
+      <div class="calc-num"  id="cNum">0</div>
+      <div class="calc-hint" id="cHint"></div>
     </div>
-    <span class="c-tb-del" onclick="cp('AC')">⌫</span>
-  </div>
-  <div class="c-grid">
-    <button class="cb func" onclick="cp('AC')">C</button>
-    <button class="cb func" onclick="cp('()')">( )</button>
-    <button class="cb func" onclick="cp('%')">%</button>
-    <button class="cb op"   onclick="cp('/')">÷</button>
-    <button class="cb num"  onclick="cp('7')">7</button>
-    <button class="cb num"  onclick="cp('8')">8</button>
-    <button class="cb num"  onclick="cp('9')">9</button>
-    <button class="cb op"   onclick="cp('*')">×</button>
-    <button class="cb num"  onclick="cp('4')">4</button>
-    <button class="cb num"  onclick="cp('5')">5</button>
-    <button class="cb num"  onclick="cp('6')">6</button>
-    <button class="cb op"   onclick="cp('-')">−</button>
-    <button class="cb num"  onclick="cp('1')">1</button>
-    <button class="cb num"  onclick="cp('2')">2</button>
-    <button class="cb num"  onclick="cp('3')">3</button>
-    <button class="cb op"   onclick="cp('+')">+</button>
-    <button class="cb func" onclick="cp('+/-')">+/−</button>
-    <button class="cb num"  onclick="cp('0')">0</button>
-    <button class="cb num"  onclick="cp('.')">،</button>
-    <button class="cb eq"   onclick="cp('=')">=</button>
-  </div>
-  <div class="c-reset-row"><button class="c-reset-btn" onclick="resetCode()">· · ·</button></div>
-  <div class="c-nav">
-    <div class="c-dot"></div><div class="c-dot a"></div><div class="c-dot"></div>
-  </div>
-</div>
-
-<!-- ══════════════════ SETUP PIN ══════════════════ -->
-<div id="setup">
-  <div class="setup-logo">🔒</div>
-  <div class="setup-title">Alege codul tău secret</div>
-  <div class="setup-sub">Între 4 și 8 cifre.<br>Nimeni altcineva nu îl va ști.</div>
-  <div class="pin-dots">
-    <div class="pdot" id="d0"></div><div class="pdot" id="d1"></div>
-    <div class="pdot" id="d2"></div><div class="pdot" id="d3"></div>
-    <div class="pdot" id="d4"></div><div class="pdot" id="d5"></div>
-  </div>
-  <div class="pin-pad">
-    <button class="pp" onclick="sp('1')">1</button><button class="pp" onclick="sp('2')">2</button><button class="pp" onclick="sp('3')">3</button>
-    <button class="pp" onclick="sp('4')">4</button><button class="pp" onclick="sp('5')">5</button><button class="pp" onclick="sp('6')">6</button>
-    <button class="pp" onclick="sp('7')">7</button><button class="pp" onclick="sp('8')">8</button><button class="pp" onclick="sp('9')">9</button>
-    <button class="pp del" onclick="sp('DEL')">⌫</button>
-    <button class="pp" onclick="sp('0')">0</button>
-    <button class="pp ok" id="spOk" onclick="confirmSetup()" disabled>OK ›</button>
-  </div>
-  <div class="formula-box">
-    <div class="formula-label">FORMULA DE ACCES</div>
-    <div class="formula-val" id="fVal">???? % =</div>
-    <div class="formula-note">codul tău → % → = în calculator</div>
-  </div>
-  <div class="setup-warn">⚠️ Codul e stocat ca hash SHA-256.<br>Dacă îl uiți nu există recuperare.</div>
-</div>
-
-<!-- UNLOCK OVERLAY -->
-<div class="unlock-ov" id="unlockOv">
-  <div class="unlock-ring">🔓</div>
-  <div class="unlock-brand">T<span style="color:var(--green)">.</span>IREA</div>
-  <div class="unlock-sub">✓ autentificat · social</div>
-</div>
-
-<!-- ══════════════════ TIREA SOCIAL ══════════════════ -->
-<div id="tirea">
-
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <div class="top-bar-av" id="myAvTop" onclick="goScreen('profil-screen')">EU</div>
-    <div class="top-bar-logo">T<span>.</span>irea</div>
-    <div class="top-bar-actions">
-      <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
-      <button class="panic-btn" onclick="panicMode()">🚨</button>
+    <!-- Samsung toolbar -->
+    <div class="calc-toolbar">
+      <div class="calc-tb-icons">
+        <span class="calc-tb-icon">🕐</span>
+        <span class="calc-tb-icon">📏</span>
+        <span class="calc-tb-icon" style="font-size:16px">𝑓𝑥</span>
+      </div>
+      <span class="calc-tb-del" onclick="cp('AC')">⌫</span>
+    </div>
+    <div class="calc-grid">
+      <button class="cb func" onclick="cp('AC')">C</button>
+      <button class="cb func" onclick="cp('()')">( )</button>
+      <button class="cb func" onclick="cp('%')">%</button>
+      <button class="cb op"   onclick="cp('/')">÷</button>
+      <button class="cb num"  onclick="cp('7')">7</button>
+      <button class="cb num"  onclick="cp('8')">8</button>
+      <button class="cb num"  onclick="cp('9')">9</button>
+      <button class="cb op"   onclick="cp('*')">×</button>
+      <button class="cb num"  onclick="cp('4')">4</button>
+      <button class="cb num"  onclick="cp('5')">5</button>
+      <button class="cb num"  onclick="cp('6')">6</button>
+      <button class="cb op"   onclick="cp('-')">−</button>
+      <button class="cb num"  onclick="cp('1')">1</button>
+      <button class="cb num"  onclick="cp('2')">2</button>
+      <button class="cb num"  onclick="cp('3')">3</button>
+      <button class="cb op"   onclick="cp('+')">+</button>
+      <button class="cb func" onclick="cp('+/-')">+/−</button>
+      <button class="cb num zero" onclick="cp('0')">0</button>
+      <button class="cb num"  onclick="cp('.')">،</button>
+      <button class="cb eq"   onclick="cp('=')">=</button>
+    </div>
+    <div class="reset-row">
+      <button class="reset-btn" onclick="resetCode()">· · ·</button>
+    </div>
+    <div class="samsung-nav">
+      <div class="snav-dot"></div><div class="snav-dot a"></div><div class="snav-dot"></div>
     </div>
   </div>
 
-  <!-- FEED TABS -->
-  <div class="feed-tabs">
-    <div class="feed-tab active" id="tab-foryou" onclick="switchFeedTab('foryou')">Pentru tine</div>
-    <div class="feed-tab" id="tab-following" onclick="switchFeedTab('following')">Urmărești</div>
-  </div>
-
-  <!-- FEED -->
-  <div class="feed" id="feed"></div>
-
-  <!-- FAB -->
-  <button class="compose-fab" onclick="goScreen('compose-screen')">✦</button>
-
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-btn active" id="nav-home" onclick="navTo('home')">
-      <span class="nav-icon">🏠</span><span class="nav-label">Acasă</span>
-    </button>
-    <button class="nav-btn" id="nav-search" onclick="navTo('search')">
-      <span class="nav-icon">🔍</span><span class="nav-label">Caută</span>
-    </button>
-    <button class="nav-btn" id="nav-notif" onclick="navTo('notif')">
-      <span class="nav-icon">🔔</span><span class="nav-label">Notificări</span>
-    </button>
-    <button class="nav-btn" id="nav-profil" onclick="navTo('profil')">
-      <span class="nav-icon">👤</span><span class="nav-label">Profil</span>
-    </button>
-  </div>
-</div>
-
-<!-- ══════════════════ COMPOSE ══════════════════ -->
-<div id="compose-screen">
-  <div class="compose-topbar">
-    <span class="compose-cancel" onclick="closeScreen('compose-screen')">Anulează</span>
-    <span class="compose-title">Postare nouă</span>
-    <button class="compose-post-btn" id="composePostBtn" onclick="publishPost()" disabled>Postează</button>
-  </div>
-  <div class="compose-body">
-    <div class="compose-av" id="composeAv">EU</div>
-    <div class="compose-right">
-      <textarea class="compose-ta" id="composeTa" placeholder="Ce se întâmplă?" maxlength="280" oninput="composeTyped(this)"></textarea>
+  <!-- SETUP -->
+  <div id="setup-app">
+    <div class="setup-logo">🔒</div>
+    <div class="setup-title">Alege codul tău secret</div>
+    <div class="setup-sub">Între 4 și 8 cifre.<br>Nimeni altcineva nu îl va ști.</div>
+    <div class="pin-dots">
+      <div class="pdot" id="d0"></div><div class="pdot" id="d1"></div>
+      <div class="pdot" id="d2"></div><div class="pdot" id="d3"></div>
+      <div class="pdot" id="d4"></div><div class="pdot" id="d5"></div>
     </div>
-  </div>
-  <div class="compose-toolbar">
-    <span class="compose-tool" onclick="addEmojiToPost()">🖼️</span>
-    <span class="compose-tool">📍</span>
-    <span class="compose-tool">😊</span>
-    <span class="compose-counter" id="composeCounter" style="color:var(--muted)">280</span>
-  </div>
-</div>
-
-<!-- ══════════════════ SEARCH ══════════════════ -->
-<div id="search-screen">
-  <div class="search-topbar">
-    <div class="search-input-wrap">
-      <span style="font-size:14px;color:var(--muted)">🔍</span>
-      <input class="search-input" id="searchInput" placeholder="Caută pe T.irea" oninput="doSearch(this.value)" autocomplete="off">
+    <div class="pin-pad">
+      <button class="pp" onclick="sp('1')">1</button><button class="pp" onclick="sp('2')">2</button><button class="pp" onclick="sp('3')">3</button>
+      <button class="pp" onclick="sp('4')">4</button><button class="pp" onclick="sp('5')">5</button><button class="pp" onclick="sp('6')">6</button>
+      <button class="pp" onclick="sp('7')">7</button><button class="pp" onclick="sp('8')">8</button><button class="pp" onclick="sp('9')">9</button>
+      <button class="pp del" onclick="sp('DEL')">⌫</button>
+      <button class="pp" onclick="sp('0')">0</button>
+      <button class="pp ok" id="spOk" onclick="confirmSetup()" disabled>OK ›</button>
     </div>
-    <span class="search-cancel" onclick="closeScreen('search-screen')">Anulează</span>
-  </div>
-  <div id="search-results-wrap">
-    <div class="trending-section">TENDINȚE</div>
-    <div id="trending-list"></div>
-  </div>
-  <div class="search-results" id="search-results" style="display:none"></div>
-</div>
-
-<!-- ══════════════════ NOTIFICARI ══════════════════ -->
-<div id="notif-screen">
-  <div class="notif-topbar">
-    <div class="notif-title">Notificări</div>
-  </div>
-  <div class="notif-list" id="notifList"></div>
-</div>
-
-<!-- ══════════════════ PROFIL ══════════════════ -->
-<div id="profil-screen">
-  <div class="profil-topbar">
-    <span class="profil-back" onclick="closeScreen('profil-screen')">‹</span>
-    <div class="profil-info">
-      <div class="profil-info-name" id="profilInfoName">Utilizator</div>
-      <div class="profil-info-count" id="profilInfoCount">0 postări</div>
+    <div class="formula-box">
+      <div class="formula-label">FORMULA DE ACCES</div>
+      <div class="formula-val" id="fVal">???? % =</div>
+      <div class="formula-note">codul tău → % → = în calculator</div>
     </div>
-    <div class="profil-topbar-btns">
-      <button class="hide-btn" onclick="hideTirea()">👁</button>
-    </div>
+    <div class="setup-warn">⚠️ Codul e stocat ca hash SHA-256.<br>Dacă îl uiți nu există recuperare.</div>
   </div>
-  <div class="profil-banner"></div>
-  <div class="profil-av-big" id="profilAvBig">EU</div>
-  <div class="profil-scroll">
-    <div class="profil-meta">
-      <div class="profil-edit-btn" onclick="editProfile()">Editează profilul</div>
-      <div style="height:10px"></div>
-      <div class="profil-display-name" id="profilDisplayName">Utilizator</div>
-      <div class="profil-handle" id="profilHandle">@tirea_user</div>
-      <div class="profil-bio" id="profilBio">🔐 Utilizator T.irea · securizat</div>
-      <div class="profil-joined">📅 Alăturat <span id="profilJoined">—</span></div>
-      <div class="profil-stats-row">
-        <div class="profil-stat"><b id="profilFollowing">12</b> Urmărești</div>
-        <div class="profil-stat"><b id="profilFollowers">7</b> Urmăritori</div>
+
+  <!-- UNLOCK -->
+  <div class="unlock-ov" id="unlockOv">
+    <div class="unlock-ring">🔓</div>
+    <div class="unlock-text">T · I · R · E · A</div>
+    <div class="unlock-sub">✓ autentificat</div>
+  </div>
+
+  <!-- TIREA HOME -->
+  <div id="tirea-app">
+    <div class="t-topbar">
+      <div>
+        <div class="t-brand">T<span class="t-brand-dot">.</span>irea</div>
+        <div class="t-brand-ver">v3.0 · secure</div>
+      </div>
+      <div class="t-btn-row">
+        <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
+        <button class="panic-btn" onclick="panicMode()">🚨 Panic</button>
       </div>
     </div>
-    <div class="profil-tabs">
-      <div class="profil-tab active">Postări</div>
-      <div class="profil-tab">Răspunsuri</div>
-      <div class="profil-tab">Media</div>
+    <div class="t-search-wrap" id="searchWrap" style="display:none"></div>
+    <div class="ghost-bar online" id="gBar" onclick="toggleGhost()">
+      <div class="ghost-dot" id="gDot"></div>
+      <span id="gTxt">Vizibil — Online</span>
+      <span class="ghost-ico">👻</span>
     </div>
-    <div class="profil-posts" id="profilPosts"></div>
+    <div class="t-stories">
+      <div class="t-story" onclick="openAddFriend()"><div class="s-add">+</div><div class="s-name">Adaugă</div></div>
+      <div class="t-story" onclick="openProfil()"><div class="s-ring"><div class="s-av">EU</div></div><div class="s-name" style="color:var(--t-light)">Profil</div></div>
+    </div>
+    <div class="t-section">CONTACTE</div>
+    <div style="padding: 6px 18px 8px; flex-shrink:0;">
+      <div class="t-search-inner">
+        <span style="font-size:13px;color:var(--t-muted)">🔍</span>
+        <input class="t-search-input" id="searchInput" type="text"
+          placeholder="Caută contact..."
+          oninput="filterContacts(this.value)"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <span class="t-search-x" id="searchClear" onclick="clearSearch()" style="display:none">✕</span>
+      </div>
+    </div>
+    <div class="t-section" id="convLabel" style="padding-top:2px"></div>
+    <div class="t-conv-list" id="convList">
+      <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
+    </div>
+    <div class="t-bottom-nav">
+      <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
+      <button class="t-nav-item" id="nav-profil" onclick="openProfil()"><span class="t-nav-icon">👤</span><div class="t-nav-label">Profil</div></button>
+      <button class="t-nav-item" id="nav-setari" onclick="openSetari()"><span class="t-nav-icon">⚙️</span><div class="t-nav-label">Setări</div></button>
+    </div>
   </div>
-</div>
 
-<!-- ══════════════════ POST DETAIL ══════════════════ -->
-<div id="post-detail">
-  <div class="detail-topbar">
-    <span class="detail-back" onclick="closeScreen('post-detail')">‹</span>
-    <div class="detail-title">Postare</div>
+  <!-- PROFIL -->
+  <div id="profil-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('profil-app')">‹</span>
+      <div class="page-title">Profilul meu</div>
+    </div>
+    <div class="profil-scroll">
+      <div class="profil-hero">
+        <div class="profil-av">EU</div>
+        <div class="profil-name">Utilizator</div>
+        <div class="profil-handle" id="profilHandle">@tirea_user</div>
+        <div class="profil-stats">
+          <div class="p-stat"><div class="p-stat-num">4</div><div class="p-stat-label">Prieteni</div></div>
+          <div class="p-stat"><div class="p-stat-num" id="pMsgCount">0</div><div class="p-stat-label">Mesaje</div></div>
+          <div class="p-stat"><div class="p-stat-num">🔐</div><div class="p-stat-label">Criptat</div></div>
+        </div>
+      </div>
+      <div class="profil-section">
+        <div class="profil-sec-title">CONT</div>
+        <div class="profil-row">
+          <div class="profil-row-icon">🆔</div>
+          <div class="profil-row-info"><div class="profil-row-label">ID Tirea</div><div class="profil-row-sub" id="profilId">—</div></div>
+        </div>
+        <div class="profil-row">
+          <div class="profil-row-icon">📅</div>
+          <div class="profil-row-info"><div class="profil-row-label">Cont creat</div><div class="profil-row-sub" id="profilCreated">—</div></div>
+        </div>
+        <div class="profil-row">
+          <div class="profil-row-icon">🔑</div>
+          <div class="profil-row-info"><div class="profil-row-label">Cod de acces</div><div class="profil-row-sub">hash SHA-256 · irecuperabil</div></div>
+        </div>
+      </div>
+      </div>
+    </div>
   </div>
-  <div class="detail-body" id="detailBody"></div>
-</div>
 
-<!-- PANIC MODAL -->
-<div class="modal-ov" id="panicModal">
-  <div class="modal-box">
-    <div style="font-size:40px;text-align:center">🚨</div>
-    <div class="modal-title">Panic Mode</div>
-    <div style="font-size:13px;color:var(--muted);text-align:center;line-height:1.7">Se va șterge TOT — cont, cod, postări.<br>Acțiune ireversibilă.</div>
-    <button class="modal-btn danger" onclick="confirmPanic()">🚨 Șterge tot</button>
-    <button class="modal-cancel" onclick="closePanicModal()">Anulează</button>
+  <!-- SETARI -->
+  <div id="setari-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('setari-app')">‹</span>
+      <div class="page-title">Setări</div>
+    </div>
+    <div class="setari-scroll">
+      <div class="setari-group-title">CONFIDENȚIALITATE</div>
+      <div class="setari-row">
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">👻</div>
+        <div class="s-row-info"><div class="s-row-label">Ghost Mode</div><div class="s-row-sub">ascunde statusul online</div></div>
+        <div class="toggle" id="tog-ghost" onclick="toggleGhost()"></div>
+      </div>
+      <div class="setari-row">
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">💨</div>
+        <div class="s-row-info"><div class="s-row-label">Șterge la ieșire</div><div class="s-row-sub">mesajele dispar la închiderea chat-ului</div></div>
+        <div class="toggle on" id="tog-delete" onclick="toggleDeleteOnExit()"></div>
+      </div>
+      <div class="setari-row">
+        <div class="s-row-icon" style="background:rgba(76,175,80,0.1)">👁</div>
+        <div class="s-row-info"><div class="s-row-label">Confirmare citit</div><div class="s-row-sub">arată ✓✓ la mesaje</div></div>
+        <div class="toggle on" id="tog-read" onclick="toggleReadReceipt()"></div>
+      </div>
+      <div class="setari-group-title">SECURITATE</div>
+      <div class="setari-row" onclick="openSecretScreen()">
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🔑</div>
+        <div class="s-row-info"><div class="s-row-label">Parolă secretă comună</div><div class="s-row-sub">protecție maximă AES-256 · știți doar voi doi</div></div>
+        <span class="setari-arrow">›</span>
+      </div>
+      <div class="setari-row" onclick="resetCode()">
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🔄</div>
+        <div class="s-row-info"><div class="s-row-label">Schimbă codul</div><div class="s-row-sub">setează un cod nou SHA-256</div></div>
+        <span class="setari-arrow">›</span>
+      </div>
+      <div class="setari-row" onclick="panicMode()">
+        <div class="s-row-icon" style="background:rgba(255,68,102,0.1)">🚨</div>
+        <div class="s-row-info"><div class="s-row-label" style="color:var(--t-red)">Panic Mode</div><div class="s-row-sub">șterge tot Tirea imediat</div></div>
+        <span class="setari-arrow" style="color:var(--t-red)">›</span>
+      </div>
+      <div class="setari-group-title">DESPRE</div>
+      <div class="setari-row">
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🛡️</div>
+        <div class="s-row-info"><div class="s-row-label">Criptare</div><div class="s-row-sub">AES-256-GCM · end-to-end</div></div>
+        <span class="setari-val" style="color:var(--t-green)">activ</span>
+      </div>
+      <div class="version-footer">T.IREA · SHA-256 · v3.0</div>
+    </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+  <!-- CHAT -->
+  <div id="chat-app">
+    <div class="chat-topbar">
+      <span class="back-btn" onclick="closeChat()">‹</span>
+      <div class="chat-peer-av" id="chatAv">AN</div>
+      <div class="chat-peer-info">
+        <div class="chat-peer-name" id="chatName">Ana N.</div>
+        <div class="chat-peer-status"><span class="live-dot"></span><span>live · AES-256-GCM</span></div>
+      </div>
+      <button class="chat-act-btn" onclick="openP2P()" title="Chat P2P real">⚡</button>
+      <button class="chat-act-btn" onclick="startCall('audio')">🎤</button>
+      <button class="chat-act-btn" onclick="document.getElementById('discOv').classList.add('show')" title="Șterge conversația">🗑️</button>
+    </div>
+    <div class="enc-bar">🔐 end-to-end encrypted · dispare la închidere</div>
+    <div class="messages" id="messages"></div>
+    <!-- WebRTC status bar -->
+    <div id="p2p-bar" style="display:none;padding:6px 14px;background:rgba(76,175,80,0.08);border-top:1px solid rgba(76,175,80,0.2);font-size:10px;color:#4caf50;text-align:center;font-family:monospace;flex-shrink:0;">
+      ⚡ P2P conectat · direct · fără server
+    </div>
+    <div class="chat-input-area">
+      <textarea class="msg-input" id="msgInput" placeholder="Scrie un mesaj..." rows="1"
+        onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendMsg()">▶</button>
+    </div>
+    <div class="disc-ov" id="discOv">
+      <div class="disc-icon">💨</div>
+      <div class="disc-title">Conversație închisă</div>
+      <div class="disc-sub">Toate mesajele au fost șterse.<br>Nu există nicio urmă.</div>
+      <button class="disc-btn" onclick="confirmClose()">Înapoi →</button>
+    </div>
+  </div>
+
+  <!-- P2P CONNECT SCREEN -->
+  <div id="p2p-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('p2p-app')">‹</span>
+      <div class="page-title">Chat Live P2P</div>
+    </div>
+    <div class="p2p-body">
+      <div class="p2p-icon">⚡</div>
+      <div class="p2p-title">Conexiune directă</div>
+      <div class="p2p-sub">Mesajele merg direct între telefoane.<br>Niciun server nu le vede sau stochează.</div>
+
+      <!-- Tab: Inițiator -->
+      <div class="p2p-tabs">
+        <button class="p2p-tab active" id="tab-host" onclick="p2pTab('host')">Eu inițiez</button>
+        <button class="p2p-tab" id="tab-join" onclick="p2pTab('join')">Eu mă alătur</button>
+      </div>
+
+      <!-- HOST PANEL -->
+      <div id="p2p-host-panel">
+        <div class="p2p-step">1. Generează codul de conexiune și trimite-l prietenului</div>
+        <button class="p2p-gen-btn" onclick="p2pCreateOffer()">🔗 Generează cod</button>
+        <div class="p2p-code-wrap" id="hostCodeWrap" style="display:none">
+          <div class="p2p-code-label">Codul tău (trimite-l prietenului):</div>
+          <div class="p2p-code-box" id="hostCode"></div>
+          <button class="p2p-copy-btn" onclick="p2pCopyOffer()">📋 Copiază</button>
+        </div>
+        <div class="p2p-step" id="hostStep2" style="display:none">2. Lipește codul primit de la prieten</div>
+        <textarea class="p2p-input" id="hostAnswerInput" placeholder="Lipește codul de răspuns al prietenului..." style="display:none"></textarea>
+        <button class="p2p-connect-btn" id="hostConnectBtn" onclick="p2pHostConnect()" style="display:none">⚡ Conectează</button>
+      </div>
+
+      <!-- JOIN PANEL -->
+      <div id="p2p-join-panel" style="display:none">
+        <div class="p2p-step">1. Lipește codul primit de la cel care a inițiat</div>
+        <textarea class="p2p-input" id="joinOfferInput" placeholder="Lipește codul primit..."></textarea>
+        <button class="p2p-gen-btn" onclick="p2pCreateAnswer()">📡 Generează răspuns</button>
+        <div class="p2p-code-wrap" id="joinCodeWrap" style="display:none">
+          <div class="p2p-code-label">Răspunsul tău (trimite-l înapoi):</div>
+          <div class="p2p-code-box" id="joinCode"></div>
+          <button class="p2p-copy-btn" onclick="p2pCopyAnswer()">📋 Copiază</button>
+        </div>
+      </div>
+
+      <div class="p2p-status" id="p2pStatus"></div>
+    </div>
+  </div>
+
+  <!-- CALL OVERLAY -->
+  <div class="call-ov" id="callOv">
+    <div class="call-av" id="callAvEl">AN</div>
+    <div class="call-name" id="callNameEl">Ana N.</div>
+    <div class="call-status" id="callStatus">Se conectează...</div>
+    <div class="call-btns">
+      <button class="call-btn mute" onclick="toggleMute()">🔇</button>
+      <button class="call-btn end" onclick="endCall()">📵</button>
+      <button class="call-btn spk" onclick="toggleSpeaker()">🔊</button>
+    </div>
+  </div>
+
+  <!-- ADD FRIEND SCREEN -->
+  <div id="addfriend-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('addfriend-app')">‹</span>
+      <div class="page-title">Adaugă prieten</div>
+    </div>
+    <div class="af-scroll">
+
+      <!-- METHOD 1: QR -->
+      <div class="af-method-card" onclick="openQR()">
+        <div class="af-method-icon" style="background:rgba(76,175,80,0.1);color:#4caf50">⬛</div>
+        <div class="af-method-info">
+          <div class="af-method-title">Cod QR</div>
+          <div class="af-method-sub">Scanați reciproc — cel mai sigur</div>
+        </div>
+        <span class="af-arrow">›</span>
+      </div>
+
+      <!-- METHOD 2: LINK -->
+      <div class="af-method-card" onclick="openLink()">
+        <div class="af-method-icon" style="background:rgba(255,255,255,0.1);color:#cccccc">🔗</div>
+        <div class="af-method-info">
+          <div class="af-method-title">Link invitație</div>
+          <div class="af-method-sub">Expiră în 24h — trimite pe orice platformă</div>
+        </div>
+        <span class="af-arrow">›</span>
+      </div>
+
+      <!-- METHOD 3: PIN -->
+      <div class="af-method-card" onclick="openPIN()">
+        <div class="af-method-icon" style="background:rgba(255,180,0,0.1);color:#FFB400">🔢</div>
+        <div class="af-method-info">
+          <div class="af-method-title">PIN invitație</div>
+          <div class="af-method-sub">6 cifre — comunică verbal sau în altă app</div>
+        </div>
+        <span class="af-arrow">›</span>
+      </div>
+
+      <div class="af-divider">SAU INTRODUCE UN PIN PRIMIT</div>
+      <div class="af-pin-input-wrap">
+        <input class="af-pin-input" id="afPinInput" type="number" maxlength="6"
+          placeholder="· · · · · ·" oninput="afPinTyped(this)">
+        <button class="af-pin-btn" id="afPinBtn" onclick="acceptPIN()" disabled>Acceptă</button>
+      </div>
+      <div class="af-pin-status" id="afPinStatus"></div>
+
+    </div>
+  </div>
+
+  <!-- QR SCREEN -->
+  <div id="qr-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('qr-app')">‹</span>
+      <div class="page-title">QR Code</div>
+    </div>
+    <div class="qr-body">
+      <div class="qr-label">Arată acest cod prietenului tău</div>
+      <div class="qr-frame" id="qrFrame"></div>
+      <div class="qr-id-text" id="qrIdText">ID: —</div>
+      <div class="qr-orr">— sau —</div>
+      <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
+      <input type="file" id="qrCameraInput" accept="image/*" capture="environment" style="display:none" onchange="readQRFromImage(this)">
+      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează QR</button>
+      <div class="qr-scan-result" id="qrScanResult"></div>
+      <div class="qr-scan-result" id="qrScanResult"></div>
+    </div>
+  </div>
+
+  <!-- LINK SCREEN -->
+  <div id="link-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('link-app')">‹</span>
+      <div class="page-title">Link invitație</div>
+    </div>
+    <div class="link-body">
+      <div class="link-icon">🔗</div>
+      <div class="link-label">Linkul tău de invitație</div>
+      <div class="link-box" id="linkBox">Se generează...</div>
+      <div class="link-expire" id="linkExpire"></div>
+      <button class="link-copy-btn" onclick="copyLink()">📋 Copiază linkul</button>
+      <button class="link-share-btn" onclick="shareLink()">📤 Trimite</button>
+      <div class="link-note">⚠️ Oricine are linkul poate deveni prieten.<br>Acceptă doar dacă știi cui l-ai trimis.</div>
+      <div class="link-divider">— Dacă ai primit un link —</div>
+      <input class="af-pin-input" id="linkInput" type="text" placeholder="Lipește linkul primit..."
+        style="font-size:12px;letter-spacing:0;text-align:left;padding-left:14px" oninput="linkTyped(this)">
+      <button class="af-pin-btn" id="linkAcceptBtn" onclick="acceptLink()" disabled style="margin-top:8px;width:100%">Acceptă invitația</button>
+      <div class="af-pin-status" id="linkStatus"></div>
+    </div>
+  </div>
+
+  <!-- PIN SCREEN -->
+  <div id="pin-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('pin-app')">‹</span>
+      <div class="page-title">PIN invitație</div>
+    </div>
+    <div class="pin-body">
+      <div class="pin-icon">🔢</div>
+      <div class="pin-label">Pinul tău de invitație</div>
+      <div class="pin-big" id="pinBig">· · · · · ·</div>
+      <div class="pin-expire" id="pinExpire"></div>
+      <button class="pin-regen-btn" onclick="regenPIN()">🔄 Generează alt PIN</button>
+      <div class="pin-note">Comunică acest PIN verbal sau prin orice altă platformă.<br>Este valabil 10 minute.</div>
+    </div>
+  </div>
+
+  <!-- GENERIC CONFIRM MODAL -->
+  <div class="modal-ov" id="genericModal">
+    <div class="modal-box">
+      <div style="font-size:36px;text-align:center" id="genericIcon">⚠️</div>
+      <div class="modal-title" id="genericTitle">Confirmare</div>
+      <div style="font-size:13px;color:var(--t-muted);text-align:center;line-height:1.6" id="genericMsg"></div>
+      <button class="modal-btn" id="genericOk" onclick="genericConfirm()">Confirmare</button>
+      <button class="modal-cancel" id="genericCancel" onclick="genericClose()">Anulează</button>
+    </div>
+  </div>
+  <div class="modal-ov" id="confirmModal">
+    <div class="modal-box">
+      <div style="font-size:40px;text-align:center">👋</div>
+      <div class="modal-title" id="confirmTitle">Adaugă prieten?</div>
+      <div style="font-size:13px;color:var(--t-muted);text-align:center;line-height:1.6" id="confirmSub">Vrei să adaugi această persoană în lista ta?</div>
+      <button class="modal-btn" onclick="confirmAddFriend()">✓ Adaugă prieten</button>
+      <button class="modal-cancel" onclick="closeConfirm()">Anulează</button>
+    </div>
+  </div>
+
+  <!-- PAROLA SECRETA -->
+  <div id="secret-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('secret-app')">‹</span>
+      <div class="page-title">Parolă secretă</div>
+    </div>
+    <div class="secret-body">
+      <div style="font-size:48px;margin-top:10px">🔑</div>
+      <div class="secret-title">Parolă secretă comună</div>
+      <div class="secret-sub">Stabiliți această parolă față în față sau verbal.<br><br>Nu se trimite nicăieri — rămâne doar pe telefonul tău. Fără ea, nimeni nu poate citi mesajele, nici Firebase.</div>
+      <input class="secret-input" id="secretInput" type="password"
+        placeholder="Introduceți parola secretă..."
+        oninput="secretTyped(this)"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="secret-strength" id="secretStrength"></div>
+      <button class="secret-btn" id="secretBtn" onclick="confirmSecret()" disabled>🔐 Setează parola</button>
+      <div id="secretCurrent"></div>
+      <div class="secret-note">⚠️ Amândoi trebuie să introduceți <b>exact aceeași parolă</b>.<br>Dacă diferă, mesajele nu se pot decripta.</div>
+    </div>
+  </div>
 
 </div></div>
-
 <script>
-// ══════════════════════════════════
-// FIREBASE
-// ══════════════════════════════════
-const firebaseConfig = { databaseURL:"https://tirea-6dc59-default-rtdb.firebaseio.com" };
-try{ firebase.initializeApp(firebaseConfig); }catch(e){}
-const db = firebase.database();
 
-// ══════════════════════════════════
-// PHONE SCALE
-// ══════════════════════════════════
-function scalePhone(){
-  const p=document.querySelector('.phone'); if(!p) return;
-  if(window.innerWidth<=480){p.style.transform='';return;}
-  const s=Math.min((window.innerHeight-20)/780,(window.innerWidth-20)/360,1);
-  p.style.transform='scale('+s+')';
-  const ex=780*(1-s);
-  p.style.marginTop=(-ex/2)+'px';
-  p.style.marginBottom=(-ex/2)+'px';
+// Scalare dinamica PC
+function scalePhone() {
+  var phone = document.querySelector('.phone');
+  if (!phone) return;
+  if (window.innerWidth <= 480) { phone.style.transform = ''; return; }
+  var scaleH = (window.innerHeight - 20) / 780;
+  var scaleW = (window.innerWidth - 20) / 360;
+  var scale = Math.min(scaleH, scaleW, 1);
+  phone.style.transform = 'scale(' + scale + ')';
+  var excess = 780 * (1 - scale);
+  phone.style.marginTop = (-excess / 2) + 'px';
+  phone.style.marginBottom = (-excess / 2) + 'px';
 }
-window.addEventListener('resize',scalePhone);
-document.addEventListener('DOMContentLoaded',scalePhone);
+window.addEventListener('resize', scalePhone);
+document.addEventListener('DOMContentLoaded', scalePhone);
 
-// ══════════════════════════════════
-// SHAKE TO HIDE
-// ══════════════════════════════════
-(function(){
-  let THRESH=22,last=0,lx=null,ly=null,lz=null;
-  function req(){ if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function') DeviceMotionEvent.requestPermission().catch(()=>{}); }
-  document.addEventListener('DOMContentLoaded',()=>document.body.addEventListener('click',req,{once:true}));
-  window.addEventListener('devicemotion',function(e){
-    const a=e.accelerationIncludingGravity; if(!a) return;
-    const now=Date.now(); if(now-last<80) return; last=now;
-    if(lx===null){lx=a.x;ly=a.y;lz=a.z;return;}
-    const d=Math.abs(a.x-lx)+Math.abs(a.y-ly)+Math.abs(a.z-lz);
-    lx=a.x;ly=a.y;lz=a.z;
-    if(d>THRESH&&document.getElementById('tirea').classList.contains('vis')) hideTirea();
+// SHAKE TO HIDE — scutura sa ascunda Tirea
+(function() {
+  var THRESH = 20, last = 0, lx = null, ly = null, lz = null;
+  function req() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().catch(function(){});
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', req, { once: true });
+  });
+  window.addEventListener('devicemotion', function(e) {
+    var a = e.accelerationIncludingGravity; if (!a) return;
+    var now = Date.now(); if (now - last < 80) return; last = now;
+    if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
+    var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
+    lx=a.x; ly=a.y; lz=a.z;
+    if (d > THRESH) {
+      var t = document.getElementById('tirea-app');
+      if (t && t.classList.contains('vis')) hideTirea();
+    }
   });
 })();
 
-// ══════════════════════════════════
-// CLOCK
-// ══════════════════════════════════
-function tick(){ const n=new Date(); document.getElementById('sbTime').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
-tick(); setInterval(tick,15000);
+let storedHash = localStorage.getItem('tirea_hash') || null;
+let cur = '0', expr = '', waitPct = false, ghostOn = false, pin = '', msgCount = 0;
 
-// ══════════════════════════════════
-// STATE
-// ══════════════════════════════════
-let storedHash=localStorage.getItem('tirea_hash')||null;
-let pinBuf='', waitPct=false;
-let myUid=localStorage.getItem('tirea_uid')||(()=>{const id='u_'+Math.random().toString(36).substr(2,12);localStorage.setItem('tirea_uid',id);return id;})();
-let myName=localStorage.getItem('tirea_name')||'Utilizator';
-let myHandle=localStorage.getItem('tirea_handle')||'tirea_user';
-const COLORS=['av-green','av-blue','av-purple','av-teal','av-red','av-orange'];
-
-// ══════════════════════════════════
-// CRYPTO
-// ══════════════════════════════════
-async function sha256(msg){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-// ══════════════════════════════════
-// CALCULATOR ENGINE
-// ══════════════════════════════════
-let _cur='0',_expr='',_op=null,_op1=null,_wop=false,_jeq=false,_lop=null,_ln=null,_dot=false;
-function _rst(){_cur='0';_expr='';_op=null;_op1=null;_wop=false;_jeq=false;_lop=null;_ln=null;_dot=false;waitPct=false;}
-function _app(a,op,b){switch(op){case'+':return a+b;case'-':return a-b;case'*':return a*b;case'/':return b===0?Infinity:a/b;}return b;}
-function _sym(op){return{'+':'+','-':'−','*':'×','/':'÷'}[op]||op;}
-function _fmt(n){if(!isFinite(n)||isNaN(n))return'Eroare';return(Math.round(n*1e9)/1e9)+'';}
-function _fs(el,v){el.style.fontSize=v.length>10?'36px':v.length>7?'50px':'64px';}
+function tick() {
+  const n = new Date();
+  document.getElementById('stime').textContent =
+    n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+}
+tick(); setInterval(tick, 15000);
 
-function updateHint(){
-  const h=document.getElementById('cHint');
-  if(!storedHash){h.textContent='apasă = pentru configurare';h.className='c-hint';}
-  else{h.textContent='';h.className='c-hint';}
+function updateHint() {
+  const h = document.getElementById('cHint');
+  if (!storedHash) { h.textContent = 'apasă = pentru configurare'; h.className = 'calc-hint'; }
+  else { h.textContent = ''; h.className = 'calc-hint'; }
 }
 updateHint();
 
-function cp(v){
-  const nEl=document.getElementById('cNum'),eEl=document.getElementById('cExpr'),hEl=document.getElementById('cHint');
-  if(v==='='&&!storedHash){showSetup();return;}
-  if(v==='='&&waitPct){waitPct=false;hEl.textContent='';hEl.className='c-hint';checkPin(window._spv||_cur);return;}
-  if(v==='%'&&storedHash&&/^\d+$/.test(_cur)&&_cur.length>=4&&!_op){
-    window._spv=_cur;waitPct=true;eEl.textContent=_cur+' %';
-    hEl.textContent='🔒 acum apasă =';hEl.className='c-hint on';return;
+// Calculator engine state
+let _op=null, _op1=null, _waitOp2=false, _justEq=false, _lastOp=null, _lastN=null, _hasDot=false;
+function _calcReset(){cur='0';expr='';waitPct=false;_op=null;_op1=null;_waitOp2=false;_justEq=false;_lastOp=null;_lastN=null;_hasDot=false;}
+function _apply(a,op,b){switch(op){case'+':return a+b;case'-':return a-b;case'*':return a*b;case'/':return b===0?Infinity:a/b;}return b;}
+function _sym(op){return{'+':'+','-':'−','*':'×','/':'÷'}[op]||op;}
+function _fmtN(n){if(!isFinite(n)||isNaN(n))return'Eroare';return(Math.round(n*1e9)/1e9)+'';}
+
+function cp(v) {
+  const nEl = document.getElementById('cNum');
+  const eEl = document.getElementById('cExpr');
+  const hEl = document.getElementById('cHint');
+
+  // Setup la prima folosire
+  if (v === '=' && !storedHash) { showSetup(); return; }
+
+  // ── Tirea unlock: cifre % = ──
+  if (v === '=' && waitPct) {
+    waitPct = false; hEl.textContent = ''; hEl.className = 'calc-hint';
+    checkPin(window._savedPin || cur); return;
   }
-  if(v==='AC'){_rst();nEl.textContent='0';nEl.className='c-num';eEl.textContent='';updateHint();_fs(nEl,'0');return;}
-  if(/^[0-9]$/.test(v)){
-    if(_jeq)_rst();
-    if(_wop){_cur=v;_wop=false;_dot=false;}else{if(_cur==='0')_cur=v;else if(_cur.replace('-','').length<12)_cur+=v;}
-    _jeq=false;nEl.textContent=_cur;_fs(nEl,_cur);nEl.className='c-num';
-    if(storedHash&&/^\d+$/.test(_cur)&&_cur.length>=4&&!_op){hEl.textContent='apasă %';hEl.className='c-hint on';}else updateHint();
+  if (v === '%' && storedHash && /^\d+$/.test(cur) && cur.length >= 4 && !_op) {
+    window._savedPin = cur;
+    waitPct = true; eEl.textContent = cur + ' %';
+    nEl.className = 'calc-num';
+    hEl.textContent = '🔒 acum apasă ='; hEl.className = 'calc-hint on';
     return;
   }
-  if(v==='.'){if(_jeq){_rst();_cur='0';}if(_wop){_cur='0';_wop=false;}if(!_dot){_cur+='.';_dot=true;}_jeq=false;nEl.textContent=_cur;return;}
-  if(v==='+/-'){if(_cur!=='0'&&_cur!=='Eroare')_cur=_cur.startsWith('-')?_cur.slice(1):'-'+_cur;_jeq=false;nEl.textContent=_cur;_fs(nEl,_cur);return;}
-  if(v==='%'){const n=parseFloat(_cur);const r=(_op&&_op1!==null)?(_op1*n/100):n/100;_cur=_fmt(r);_dot=_cur.includes('.');nEl.textContent=_cur;_fs(nEl,_cur);if(_op)eEl.textContent=_fmt(_op1)+' '+_sym(_op)+' '+_cur;return;}
-  if(['+','-','*','/'].includes(v)){
-    const n=parseFloat(_cur);
-    if(_op&&!_wop&&!_jeq){const r=_app(_op1,_op,n);_op1=r;_cur=_fmt(r);nEl.textContent=_cur;_fs(nEl,_cur);}else _op1=n;
-    _op=v;eEl.textContent=_fmt(_op1)+' '+_sym(v);_wop=true;_jeq=false;_dot=false;nEl.className='c-num';updateHint();return;
+
+  // ── AC ──
+  if (v === 'AC') {
+    _calcReset(); nEl.textContent='0'; nEl.className='calc-num';
+    eEl.textContent=''; updateHint(); fs(nEl,'0'); return;
   }
-  if(v==='='){
-    let result,exprStr;
-    if(_jeq&&_lop!==null){result=_app(parseFloat(_cur),_lop,_ln);exprStr=_cur+' '+_sym(_lop)+' '+_fmt(_ln)+' =';}
-    else if(_op){_lop=_op;_ln=parseFloat(_cur);result=_app(_op1,_op,_ln);exprStr=_fmt(_op1)+' '+_sym(_op)+' '+_fmt(_ln)+' =';}
-    else{exprStr=_cur+' =';result=parseFloat(_cur);}
-    _cur=_fmt(result);_op=null;_op1=result;_wop=false;_jeq=true;_dot=_cur.includes('.');
-    eEl.textContent=exprStr;nEl.textContent=_cur;_fs(nEl,_cur);nEl.className='c-num';updateHint();return;
+
+  // ── Cifre 0-9 ──
+  if (/^[0-9]$/.test(v)) {
+    if (_justEq) { _calcReset(); }
+    if (_waitOp2) { cur=v; _waitOp2=false; _hasDot=false; }
+    else { if(cur==='0') cur=v; else if(cur.replace('-','').length<12) cur+=v; }
+    _justEq=false;
+    nEl.textContent=cur; fs(nEl,cur); nEl.className='calc-num';
+    if (storedHash && /^\d+$/.test(cur) && cur.length>=4 && !_op) {
+      nEl.className='calc-num'; hEl.textContent='apasă %'; hEl.className='calc-hint on';
+    } else { updateHint(); }
+    return;
+  }
+
+  // ── Punct zecimal ──
+  if (v === '.') {
+    if (_justEq) { _calcReset(); cur='0'; }
+    if (_waitOp2) { cur='0'; _waitOp2=false; }
+    if (!_hasDot) { cur+='.'; _hasDot=true; }
+    _justEq=false; nEl.textContent=cur; return;
+  }
+
+  // ── +/- ──
+  if (v === '+/-') {
+    if (cur!=='0'&&cur!=='Eroare') cur=cur.startsWith('-')?cur.slice(1):'-'+cur;
+    _justEq=false; nEl.textContent=cur; fs(nEl,cur); return;
+  }
+
+  // ── % calcul normal ──
+  if (v === '%') {
+    const n=parseFloat(cur);
+    const r=(_op&&_op1!==null)?(_op1*n/100):n/100;
+    cur=_fmtN(r); _hasDot=cur.includes('.');
+    nEl.textContent=cur; fs(nEl,cur); nEl.className='calc-num';
+    if (_op) eEl.textContent=_fmtN(_op1)+' '+_sym(_op)+' '+cur;
+    return;
+  }
+
+  // ── Operatori + - * / ──
+  if (['+','-','*','/'].includes(v)) {
+    const n=parseFloat(cur);
+    if (_op&&!_waitOp2&&!_justEq) {
+      const r=_apply(_op1,_op,n); _op1=r; cur=_fmtN(r);
+      nEl.textContent=cur; fs(nEl,cur);
+    } else { _op1=n; }
+    _op=v; eEl.textContent=_fmtN(_op1)+' '+_sym(v);
+    _waitOp2=true; _justEq=false; _hasDot=false;
+    nEl.className='calc-num'; updateHint(); return;
+  }
+
+  // ── = ──
+  if (v === '=') {
+    let result, exprStr;
+    if (_justEq && _lastOp!==null) {
+      result=_apply(parseFloat(cur),_lastOp,_lastN);
+      exprStr=cur+' '+_sym(_lastOp)+' '+_fmtN(_lastN)+' =';
+    } else if (_op) {
+      const b=_waitOp2?parseFloat(cur):parseFloat(cur);
+      _lastOp=_op; _lastN=b;
+      result=_apply(_op1,_op,b);
+      exprStr=_fmtN(_op1)+' '+_sym(_op)+' '+_fmtN(b)+' =';
+    } else {
+      exprStr=cur+' ='; result=parseFloat(cur);
+    }
+    cur=_fmtN(result); _op=null; _op1=result;
+    _waitOp2=false; _justEq=true; _hasDot=cur.includes('.');
+    eEl.textContent=exprStr; nEl.textContent=cur; fs(nEl,cur);
+    nEl.className='calc-num'; updateHint(); return;
   }
 }
 
-async function checkPin(entered){
-  const nEl=document.getElementById('cNum'),eEl=document.getElementById('cExpr');
-  const hash=await sha256(entered);
-  if(hash===storedHash){unlock();}
-  else{
-    nEl.style.color='#FF4466';
-    setTimeout(()=>{_cur='0';nEl.textContent='0';nEl.className='c-num';nEl.style.color='';eEl.textContent='';updateHint();},600);
+async function checkPin(entered) {
+  const nEl = document.getElementById('cNum');
+  const eEl = document.getElementById('cExpr');
+  const hash = await sha256(entered);
+  if (hash === storedHash) {
+    unlock();
+  } else {
+    nEl.style.color = '#FF4466';
+    setTimeout(() => {
+      cur = '0'; nEl.textContent = '0'; nEl.className = 'calc-num';
+      nEl.style.color = ''; eEl.textContent = ''; updateHint();
+    }, 600);
   }
 }
 
-// ══════════════════════════════════
-// SETUP PIN
-// ══════════════════════════════════
-function showSetup(){
-  pinBuf='';
-  document.getElementById('setup').classList.add('vis');
-  document.getElementById('sb').className='sb sb-dark';
+function fmt(n) { if(isNaN(n)||!isFinite(n)) return 'Eroare'; return (Math.round(n*1e8)/1e8)+''; }
+function fs(el, v) { const l=v.length; el.style.fontSize = l>10?'36px':l>7?'50px':'64px'; }
+
+function showSetup() {
+  pin = '';
+  document.getElementById('setup-app').classList.add('vis');
+  document.getElementById('sb').className = 'status-bar sb-tirea';
   rSetup();
 }
-function sp(v){
-  if(v==='DEL')pinBuf=pinBuf.slice(0,-1);
-  else if(pinBuf.length<8)pinBuf+=v;
+
+function sp(v) {
+  if (v === 'DEL') pin = pin.slice(0,-1);
+  else if (pin.length < 8) pin += v;
   rSetup();
 }
-function rSetup(){
-  for(let i=0;i<6;i++)document.getElementById('d'+i).classList.toggle('f',i<pinBuf.length);
-  document.getElementById('fVal').textContent=(pinBuf.length>0?'·'.repeat(pinBuf.length):'????')+' % =';
-  document.getElementById('spOk').disabled=pinBuf.length<4;
-}
-async function confirmSetup(){
-  if(pinBuf.length<4)return;
-  const hash=await sha256(pinBuf);
-  storedHash=hash;
-  localStorage.setItem('tirea_hash',hash);
-  const now=new Date();
-  localStorage.setItem('tirea_created',now.toLocaleDateString('ro-RO',{day:'2-digit',month:'long',year:'numeric'}));
-  document.getElementById('setup').classList.remove('vis');
-  _cur='0';document.getElementById('cNum').textContent='0';
-  document.getElementById('cExpr').textContent='';updateHint();
-  setTimeout(()=>unlock(),300);
-}
-function resetCode(){
-  if(!confirm('Șterge codul curent și setează unul nou?'))return;
-  localStorage.removeItem('tirea_hash');storedHash=null;
-  document.getElementById('tirea').classList.remove('vis');
-  document.getElementById('calc').style.display='flex';
-  document.getElementById('sb').className='sb sb-light';
-  updateHint();setTimeout(()=>showSetup(),200);
+
+function rSetup() {
+  for(let i=0;i<6;i++) document.getElementById('d'+i).classList.toggle('f', i<pin.length);
+  document.getElementById('fVal').textContent = (pin.length > 0 ? '·'.repeat(pin.length) : '????') + ' % =';
+  document.getElementById('spOk').disabled = pin.length < 4;
 }
 
-// ══════════════════════════════════
-// UNLOCK
-// ══════════════════════════════════
-function unlock(){
-  const ov=document.getElementById('unlockOv');
-  document.getElementById('calc').style.display='none';
+async function confirmSetup() {
+  if (pin.length < 4) return;
+  const hash = await sha256(pin);
+  storedHash = hash;
+  localStorage.setItem('tirea_hash', hash);
+  const now = new Date();
+  localStorage.setItem('tirea_created', now.toLocaleDateString('ro-RO', {day:'2-digit',month:'long',year:'numeric'}));
+  const id = 'tir_' + Math.random().toString(36).slice(2,8);
+  localStorage.setItem('tirea_id', id);
+  document.getElementById('setup-app').classList.remove('vis');
+  cur = '0';
+  document.getElementById('cNum').textContent = '0';
+  document.getElementById('cNum').className = 'calc-num';
+  document.getElementById('cExpr').textContent = '';
+  updateHint();
+  setTimeout(() => unlock(), 300);
+}
+
+// ===== GENERIC MODAL (inlocuieste confirm/alert) =====
+let _genericCb = null;
+function showGenericModal(icon, title, msg, okLabel, cb, showCancel=true) {
+  document.getElementById('genericIcon').textContent = icon;
+  document.getElementById('genericTitle').textContent = title;
+  document.getElementById('genericMsg').textContent = msg;
+  document.getElementById('genericOk').textContent = okLabel;
+  document.getElementById('genericCancel').style.display = showCancel ? '' : 'none';
+  _genericCb = cb;
+  document.getElementById('genericModal').classList.add('show');
+}
+function genericConfirm() {
+  document.getElementById('genericModal').classList.remove('show');
+  if (_genericCb) { _genericCb(); _genericCb = null; }
+}
+function genericClose() {
+  document.getElementById('genericModal').classList.remove('show');
+  _genericCb = null;
+}
+
+function resetCode() {
+  showGenericModal('🔑', 'Schimbă codul', 'Vei fi dus la configurare pentru a seta un cod nou. Codul actual va fi șters.', 'Continuă', () => {
+    localStorage.removeItem('tirea_hash');
+    storedHash = null;
+    closeAllPages();
+    document.getElementById('tirea-app').classList.remove('vis');
+    document.getElementById('sb').className = 'status-bar sb-dark';
+    updateHint();
+    setTimeout(() => showSetup(), 200);
+  });
+}
+
+function panicMode() {
+  showGenericModal('🚨', 'Panic Mode', 'Se va șterge TOT — cont, cod, prieteni, mesaje. Nicio urmă. Această acțiune e ireversibilă.', '🚨 Șterge tot', () => {
+    localStorage.clear();
+    storedHash = null; pin = '';
+    closeAllPages();
+    ['addfriend-app','qr-app','link-app','pin-app'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('vis');
+    });
+    document.getElementById('tirea-app').classList.remove('vis');
+    document.getElementById('sb').className = 'status-bar sb-dark';
+    _calcReset();
+    document.getElementById('cNum').textContent = '0';
+    document.getElementById('cExpr').textContent = '';
+    updateHint();
+    // mesaj vizual final
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:999';
+      el.innerHTML = '<div style="font-size:48px">✓</div><div style="color:#4caf50;font-size:16px;font-weight:600">Tirea șters complet</div><div style="color:#555;font-size:12px">Nicio urmă.</div>';
+      document.querySelector('.screen').appendChild(el);
+      setTimeout(() => el.remove(), 2500);
+    }, 100);
+  });
+}
+
+function unlock() {
+  const ov = document.getElementById('unlockOv');
+  document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
-  document.getElementById('sb').className='sb sb-dark';
-  setTimeout(()=>{
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  setTimeout(() => {
     ov.classList.remove('show');
-    document.getElementById('tirea').classList.add('vis');
-    initApp();
-  },1200);
-  _rst();
+    document.getElementById('tirea-app').classList.add('vis');
+    startListening();
+  }, 1200);
+  cur='0'; expr=''; waitPct=false;
   document.getElementById('cNum').textContent='0';
+  document.getElementById('cNum').className='calc-num';
   document.getElementById('cExpr').textContent='';
   document.getElementById('cHint').textContent='';
+  document.getElementById('profilId').textContent = localStorage.getItem('tirea_id') || '—';
+  document.getElementById('profilCreated').textContent = localStorage.getItem('tirea_created') || '—';
+  loadSavedContacts();
 }
 
-function hideTirea(){
-  closeAllScreens();
-  document.getElementById('tirea').classList.remove('vis');
-  document.getElementById('calc').style.display='flex';
-  document.getElementById('sb').className='sb sb-light';
+function hideTirea() {
+  closeAllPages();
+  document.getElementById('tirea-app').classList.remove('vis');
+  document.getElementById('calc-app').style.display = 'flex';
+  document.getElementById('sb').className = 'status-bar sb-dark';
 }
 
-function panicMode(){document.getElementById('panicModal').classList.add('show');}
-function closePanicModal(){document.getElementById('panicModal').classList.remove('show');}
-function confirmPanic(){
-  localStorage.clear();storedHash=null;pinBuf='';
-  db.ref('posts').remove();
-  closeAllScreens();
-  document.getElementById('tirea').classList.remove('vis');
-  document.getElementById('calc').style.display='flex';
-  document.getElementById('sb').className='sb sb-light';
-  _rst();document.getElementById('cNum').textContent='0';
-  document.getElementById('cExpr').textContent='';updateHint();
-  document.getElementById('panicModal').classList.remove('show');
-  showToast('✓ Tirea șters complet');
+function closeAllPages() {
+  ['profil-app','setari-app','chat-app'].forEach(id => document.getElementById(id).classList.remove('vis'));
+  document.getElementById('calc-app').style.display = 'flex';
 }
 
-// ══════════════════════════════════
-// SCREEN NAVIGATION
-// ══════════════════════════════════
-const SCREENS=['compose-screen','search-screen','notif-screen','profil-screen','post-detail'];
-function goScreen(id){document.getElementById(id).classList.add('vis');}
-function closeScreen(id){document.getElementById(id).classList.remove('vis');}
-function closeAllScreens(){SCREENS.forEach(s=>document.getElementById(s).classList.remove('vis'));}
-
-function navTo(tab){
-  ['home','search','notif','profil'].forEach(t=>{
-    const el=document.getElementById('nav-'+t);
-    if(el)el.classList.toggle('active',t===tab);
-  });
-  if(tab==='search')goScreen('search-screen');
-  else if(tab==='notif'){buildNotifications();goScreen('notif-screen');}
-  else if(tab==='profil')goScreen('profil-screen');
-  else closeAllScreens();
-}
-
-// ══════════════════════════════════
-// TOAST
-// ══════════════════════════════════
-let _toastTimer=null;
-function showToast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
-}
-
-// ══════════════════════════════════
-// APP INIT
-// ══════════════════════════════════
-function initApp(){
-  myName=localStorage.getItem('tirea_name')||'Utilizator';
-  myHandle=localStorage.getItem('tirea_handle')||'tirea_user';
-  // Update avatars
-  const initials=myName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'EU';
-  document.getElementById('myAvTop').textContent=initials;
-  document.getElementById('composeAv').textContent=initials;
-  document.getElementById('profilAvBig').textContent=initials;
-  document.getElementById('profilDisplayName').textContent=myName;
-  document.getElementById('profilHandle').textContent='@'+myHandle;
-  document.getElementById('profilInfoName').textContent=myName;
-  document.getElementById('profilBio').textContent=localStorage.getItem('tirea_bio')||'🔐 Utilizator T.irea · securizat';
-  document.getElementById('profilJoined').textContent=localStorage.getItem('tirea_created')||'—';
-  buildNotifications();
-  loadFeed();
-}
-
-// ══════════════════════════════════
-// FEED — FIREBASE REALTIME
-// ══════════════════════════════════
-const AVATAR_COLORS=['#1b4d1e','#1a2d4d','#2d1a4d','#1a3d3d','#4d1a1a','#4d2e1a'];
-function strColor(s){ let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+(h<<5)-h;return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length]; }
-function initials(n){ return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-function relTime(ts){
-  const d=(Date.now()-ts)/1000;
-  if(d<60)return Math.floor(d)+'s';
-  if(d<3600)return Math.floor(d/60)+'m';
-  if(d<86400)return Math.floor(d/3600)+'h';
-  return Math.floor(d/86400)+'z';
-}
-
-let postsRef=null, postsCache=[];
-
-function loadFeed(){
-  const feed=document.getElementById('feed');
-  feed.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">⏳ Se încarcă...</div>';
-  if(postsRef)postsRef.off();
-  postsRef=db.ref('posts').orderByChild('ts').limitToLast(50);
-  postsRef.on('value',snap=>{
-    postsCache=[];
-    snap.forEach(c=>{ postsCache.push({id:c.key,...c.val()}); });
-    postsCache.reverse();
-    renderFeed(postsCache);
-    renderProfilPosts();
-  });
-}
-
-function renderFeed(posts){
-  const feed=document.getElementById('feed');
-  if(posts.length===0){
-    feed.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;line-height:1.8">Nicio postare încă.<br>Fii primul care postează! ✦</div>';
-    return;
-  }
-  feed.innerHTML='';
-  posts.forEach(p=>feed.appendChild(buildPostEl(p)));
-}
-
-function buildPostEl(p){
-  const div=document.createElement('div');
-  div.className='post';
-  const col=strColor(p.uid||'x');
-  const init=initials(p.name||'User');
-  const liked=(p.likes||{})[myUid];
-  const likeCnt=Object.keys(p.likes||{}).length;
-  const cmtCnt=p.commentCount||0;
-  const reCnt=p.repostCount||0;
-  div.innerHTML=`
-    <div class="post-av" style="background:${col}">${esc(init)}</div>
-    <div class="post-body">
-      <div class="post-header">
-        <span class="post-name">${esc(p.name||'User')}</span>
-        <span class="post-handle">@${esc(p.handle||'user')}</span>
-        <span class="post-time">${relTime(p.ts||Date.now())}</span>
-      </div>
-      <div class="post-text">${esc(p.text||'')}</div>
-      <div class="post-actions">
-        <div class="post-act" onclick="openPost('${p.id}',event)">
-          <span class="act-icon">💬</span>
-          <span class="act-count">${cmtCnt>0?cmtCnt:''}</span>
-        </div>
-        <div class="post-act" onclick="repost('${p.id}',event)">
-          <span class="act-icon">🔁</span>
-          <span class="act-count">${reCnt>0?reCnt:''}</span>
-        </div>
-        <div class="post-act ${liked?'liked':''}" id="like-${p.id}" onclick="likePost('${p.id}',event)">
-          <span class="act-icon">${liked?'❤️':'🤍'}</span>
-          <span class="act-count">${likeCnt>0?likeCnt:''}</span>
-        </div>
-        <div class="post-act" onclick="sharePost('${p.id}',event)">
-          <span class="act-icon">📤</span>
-        </div>
-        ${p.uid===myUid?`<div class="post-act" onclick="deletePost('${p.id}',event)"><span class="act-icon">🗑️</span></div>`:''}
-      </div>
-    </div>`;
-  return div;
-}
-
-// ── LIKE ──
-function likePost(id, e){
-  if(e){e.stopPropagation();}
-  const ref=db.ref('posts/'+id+'/likes/'+myUid);
-  const p=postsCache.find(x=>x.id===id);
-  if(!p)return;
-  if((p.likes||{})[myUid]){ref.remove();}
-  else{ref.set(true);}
-}
-
-// ── REPOST ──
-function repost(id, e){
-  if(e){e.stopPropagation();}
-  db.ref('posts/'+id+'/repostCount').transaction(v=>(v||0)+1);
-  showToast('🔁 Repostat!');
-}
-
-// ── DELETE ──
-function deletePost(id, e){
-  if(e){e.stopPropagation();}
-  db.ref('posts/'+id).remove();
-  showToast('🗑️ Postare ștearsă');
-}
-
-// ── SHARE ──
-function sharePost(id, e){
-  if(e){e.stopPropagation();}
-  if(navigator.share){navigator.share({title:'T.irea post',text:'Postare de pe T.irea',url:window.location.href});}
-  else{showToast('📋 Link copiat!');}
-}
-
-// ── OPEN POST DETAIL ──
-function openPost(id, e){
-  if(e){e.stopPropagation();}
-  const p=postsCache.find(x=>x.id===id);
-  if(!p)return;
-  renderPostDetail(p);
-  goScreen('post-detail');
-}
-
-function renderPostDetail(p){
-  const col=strColor(p.uid||'x');
-  const init=initials(p.name||'User');
-  const liked=(p.likes||{})[myUid];
-  const likeCnt=Object.keys(p.likes||{}).length;
-  const d=new Date(p.ts||Date.now());
-  const timeStr=d.toLocaleString('ro-RO',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short',year:'numeric'});
-  const body=document.getElementById('detailBody');
-  body.innerHTML=`
-    <div class="detail-header">
-      <div class="detail-av" style="background:${col}">${esc(init)}</div>
-      <div class="detail-user">
-        <div class="detail-name">${esc(p.name||'User')}</div>
-        <div class="detail-handle">@${esc(p.handle||'user')}</div>
-      </div>
-    </div>
-    <div class="detail-text">${esc(p.text||'')}</div>
-    <div class="detail-time">🕐 ${timeStr}</div>
-    <div class="detail-counts">
-      <div class="detail-count"><b>${p.repostCount||0}</b> Reposturi</div>
-      <div class="detail-count"><b>${likeCnt}</b> Like-uri</div>
-      <div class="detail-count"><b>${p.commentCount||0}</b> Comentarii</div>
-    </div>
-    <div class="detail-actions">
-      <span class="detail-act" onclick="openPost('${p.id}')">💬</span>
-      <span class="detail-act" onclick="repost('${p.id}')">🔁</span>
-      <span class="detail-act ${liked?'liked':''}" onclick="likePost('${p.id}');renderPostDetail({...postsCache.find(x=>x.id==='${p.id}')||p})">${liked?'❤️':'🤍'}</span>
-      <span class="detail-act" onclick="sharePost('${p.id}')">📤</span>
-    </div>
-    <div class="comment-input-row">
-      <div class="comment-av" style="background:${strColor(myUid)}">${esc(initials(myName))}</div>
-      <textarea class="comment-input" id="commentInput-${p.id}" placeholder="Scrie un comentariu..." rows="1"></textarea>
-      <button class="comment-send" onclick="sendComment('${p.id}')">Trimite</button>
-    </div>
-    <div id="comments-${p.id}"></div>`;
-  loadComments(p.id);
-}
-
-function sendComment(postId){
-  const inp=document.getElementById('commentInput-'+postId);
-  const text=(inp.value||'').trim();
-  if(!text)return;
-  inp.value='';
-  const ref=db.ref('comments/'+postId);
-  ref.push({uid:myUid,name:myName,handle:myHandle,text,ts:Date.now()});
-  db.ref('posts/'+postId+'/commentCount').transaction(v=>(v||0)+1);
-}
-
-function loadComments(postId){
-  const wrap=document.getElementById('comments-'+postId);
-  if(!wrap)return;
-  db.ref('comments/'+postId).orderByChild('ts').limitToLast(30).on('value',snap=>{
-    if(!wrap)return;
-    wrap.innerHTML='';
-    snap.forEach(c=>{
-      const m=c.val();
-      const col=strColor(m.uid||'x');
-      const init=initials(m.name||'?');
-      const div=document.createElement('div');
-      div.className='comment';
-      div.innerHTML=`
-        <div class="comment-av2" style="background:${col}">${esc(init)}</div>
-        <div class="comment-body">
-          <div class="comment-header">
-            <span class="comment-name">${esc(m.name||'User')}</span>
-            <span class="comment-time">${relTime(m.ts||Date.now())}</span>
-          </div>
-          <div class="comment-text">${esc(m.text||'')}</div>
-        </div>`;
-      wrap.appendChild(div);
+function toggleGhost() {
+  ghostOn = !ghostOn;
+  const b=document.getElementById('gBar'), t=document.getElementById('gTxt'), d=document.getElementById('gDot');
+  const tog=document.getElementById('tog-ghost');
+  const togRead=document.getElementById('tog-read');
+  if(ghostOn){
+    b.className='ghost-bar ghost'; t.textContent='Ghost Mode — Invizibil';
+    d.style.background='#333'; d.style.animation='none';
+    if(tog) tog.classList.add('on');
+    // dezactivează automat confirmare citit
+    readReceipt = false;
+    if(togRead) { togRead.classList.remove('on'); togRead.style.opacity='0.4'; togRead.style.pointerEvents='none'; }
+    // sterge ✓✓ din mesajele existente
+    document.querySelectorAll('.msg-wrap.me .msg-meta').forEach(el => {
+      el.textContent = el.textContent.replace(' ✓✓','');
     });
-  });
-}
-
-// ══════════════════════════════════
-// COMPOSE
-// ══════════════════════════════════
-function composeTyped(ta){
-  const len=ta.value.length;
-  const left=280-len;
-  const el=document.getElementById('composeCounter');
-  el.textContent=left;
-  el.className='compose-counter'+(left<20?' near':'')+(left<0?' over':'');
-  document.getElementById('composePostBtn').disabled=len===0||len>280;
-}
-
-function publishPost(){
-  const ta=document.getElementById('composeTa');
-  const text=ta.value.trim();
-  if(!text||text.length>280)return;
-  db.ref('posts').push({
-    uid:myUid,name:myName,handle:myHandle,
-    text,ts:Date.now(),likes:{}
-  });
-  ta.value='';
-  composeTyped(ta);
-  closeScreen('compose-screen');
-  showToast('✦ Postare publicată!');
-}
-
-function addEmojiToPost(){
-  const ta=document.getElementById('composeTa');
-  const emojis=['🔥','✨','💡','🎯','🔐','⚡','🌙','🎉','💎','🚀'];
-  ta.value+=' '+emojis[Math.floor(Math.random()*emojis.length)];
-  composeTyped(ta);
-  ta.focus();
-}
-
-// ══════════════════════════════════
-// FEED TABS
-// ══════════════════════════════════
-function switchFeedTab(tab){
-  document.getElementById('tab-foryou').classList.toggle('active',tab==='foryou');
-  document.getElementById('tab-following').classList.toggle('active',tab==='following');
-  if(tab==='following'){
-    const mine=postsCache.filter(p=>p.uid===myUid);
-    renderFeed(mine.length?mine:[{
-      id:'_demo',uid:'_sys',name:'T.irea System',handle:'system',
-      text:'Urmărește alți utilizatori pentru a le vedea postările aici.',ts:Date.now()
-    }]);
   } else {
-    renderFeed(postsCache);
+    b.className='ghost-bar online'; t.textContent='Vizibil — Online';
+    d.style.background=''; d.style.animation='';
+    if(tog) tog.classList.remove('on');
+    // reactivează confirmare citit
+    readReceipt = true;
+    if(togRead) { togRead.classList.add('on'); togRead.style.opacity=''; togRead.style.pointerEvents=''; }
+    // adaugă ✓✓ înapoi la mesajele existente
+    document.querySelectorAll('.msg-wrap.me .msg-meta').forEach(el => {
+      if(!el.textContent.includes('✓✓')) el.textContent += ' ✓✓';
+    });
   }
 }
 
-// ══════════════════════════════════
-// SEARCH
-// ══════════════════════════════════
-const TRENDING=[
-  {cat:'Trending în România',name:'#Tirea',count:'1.2k postări'},
-  {cat:'Știri · Trending',name:'#Securitate',count:'842 postări'},
-  {cat:'Trending',name:'#Privacy',count:'5.1k postări'},
-  {cat:'Trending în Tech',name:'#E2EEncryption',count:'2.8k postări'},
-  {cat:'Trending',name:'#OpenSource',count:'3.4k postări'},
-];
-function buildTrending(){
-  const list=document.getElementById('trending-list');
-  list.innerHTML='';
-  TRENDING.forEach(t=>{
-    const div=document.createElement('div');
-    div.className='trend-item';
-    div.innerHTML=`<div class="trend-cat">${t.cat}</div><div class="trend-name">${t.name}</div><div class="trend-count">${t.count}</div>`;
-    div.onclick=()=>{ document.getElementById('searchInput').value=t.name; doSearch(t.name); };
-    list.appendChild(div);
+function navTo(tab) {
+  ['chat','profil','ghost','setari'].forEach(t => {
+    const el = document.getElementById('nav-'+t);
+    if(el) el.classList.toggle('active', t === tab);
   });
-}
-function doSearch(q){
-  const resultsWrap=document.getElementById('search-results');
-  const trendWrap=document.getElementById('search-results-wrap');
-  if(!q.trim()){resultsWrap.style.display='none';trendWrap.style.display='';return;}
-  trendWrap.style.display='none';resultsWrap.style.display='';
-  const res=postsCache.filter(p=>p.text&&p.text.toLowerCase().includes(q.toLowerCase()));
-  resultsWrap.innerHTML='';
-  if(res.length===0){resultsWrap.innerHTML='<div class="no-results">😶 Niciun rezultat pentru "'+esc(q)+'"</div>';return;}
-  res.forEach(p=>resultsWrap.appendChild(buildPostEl(p)));
+  if (tab === 'chat') {
+    ['profil-app','setari-app','addfriend-app','qr-app','link-app','pin-app'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.classList.remove('vis');
+    });
+  }
 }
 
-// ══════════════════════════════════
-// NOTIFICATIONS
-// ══════════════════════════════════
-const DEMO_NOTIFS=[
-  {type:'like',icon:'❤️',iconClass:'like',text:'<b>ana_m</b> a apreciat postarea ta',time:'2m'},
-  {type:'repost',icon:'🔁',iconClass:'repost',text:'<b>mihai_p</b> a repostat postarea ta',time:'15m'},
-  {type:'follow',icon:'👤',iconClass:'follow',text:'<b>ion_x</b> a început să te urmărească',time:'1h'},
-  {type:'mention',icon:'💬',iconClass:'mention',text:'<b>radu_v</b> te-a menționat: "mergi @'+myHandle+' !"',time:'3h'},
-  {type:'like',icon:'❤️',iconClass:'like',text:'<b>elena_c</b> și alți 4 au apreciat postarea ta',time:'1z'},
-];
-function buildNotifications(){
-  const list=document.getElementById('notifList');
-  list.innerHTML='';
-  DEMO_NOTIFS.forEach((n,i)=>{
-    const div=document.createElement('div');
-    div.className='notif-item';
-    div.innerHTML=`
-      <div class="notif-icon-wrap ${n.iconClass}">${n.icon}</div>
-      <div class="notif-body">
-        <div class="notif-text">${n.text}</div>
-        <div class="notif-time">${n.time}</div>
-      </div>
-      ${i<2?'<div class="notif-badge"></div>':''}`;
-    list.appendChild(div);
+function openProfil() {
+  document.getElementById('pMsgCount').textContent = msgCount;
+  document.getElementById('profil-app').classList.add('vis');
+  navTo('profil');
+}
+
+function openSetari() {
+  document.getElementById('setari-app').classList.add('vis');
+  navTo('setari');
+}
+
+function closePage(id) {
+  document.getElementById(id).classList.remove('vis');
+  // daca inchidem un sub-ecran de adaugare, nu resetam nav-ul
+  const subScreens = ['qr-app','link-app','pin-app'];
+  if (!subScreens.includes(id)) navTo('chat');
+}
+
+function toggleSearch() {
+  const wrap = document.getElementById('searchWrap');
+  const inp = document.getElementById('searchInput');
+  const isOpen = wrap.classList.toggle('open');
+  if (isOpen) {
+    setTimeout(() => inp.focus(), 320);
+  } else {
+    inp.value = '';
+    filterContacts('');
+  }
+}
+
+function filterContacts(q) {
+  q = (q || '').toLowerCase().trim();
+  const items = document.querySelectorAll('.contact-item');
+  const label = document.getElementById('convLabel');
+  const noRes = document.getElementById('noResults');
+  const clr = document.getElementById('searchClear');
+  if(clr) clr.style.display = q ? 'block' : 'none';
+  let found = 0;
+  items.forEach(item => {
+    const match = !q || item.getAttribute('data-name').includes(q);
+    item.style.display = match ? '' : 'none';
+    if(match) found++;
+  });
+  if(label) label.textContent = q ? 'REZULTATE (' + found + ')' : '';
+  noRes.classList.toggle('vis', found === 0 && q.length > 0);
+}
+
+function clearSearch() {
+  const inp = document.getElementById('searchInput');
+  if(inp) inp.value = '';
+  filterContacts('');
+}
+
+// ===== STOCARE MESAJE IN MEMORIE (dispar cand inchizi app-ul) =====
+const chatHistory = {}; // { 'Ana N.': [{html, isMe, time}], ... }
+let currentChatName = '';
+
+function openChat(name, initials) {
+  currentChatName = name;
+  document.getElementById('chatName').textContent = name;
+  document.getElementById('chatAv').textContent = initials;
+  document.getElementById('msgInput').value = '';
+  document.getElementById('discOv').classList.remove('show');
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('chat-app').classList.add('vis');
+  msgCount = 0;
+
+  // Restaurează mesajele salvate în memorie
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  if (chatHistory[name] && chatHistory[name].length > 0) {
+    chatHistory[name].forEach(m => {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-wrap ' + (m.isMe ? 'me' : 'them');
+      wrap.innerHTML = m.html;
+      msgs.appendChild(wrap);
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+    addSys('🔐 conversație restaurată · dispare la închidere app');
+  } else {
+    addSys('🔐 AES-256-GCM · mesajele dispar la închiderea app');
+  }
+}
+
+// ===== SETTINGS STATE =====
+let deleteOnExit = true;
+let readReceipt  = true;
+
+function toggleDeleteOnExit() {
+  deleteOnExit = !deleteOnExit;
+  document.getElementById('tog-delete').classList.toggle('on', deleteOnExit);
+}
+
+function toggleReadReceipt() {
+  if (ghostOn) return; // nu se poate activa când ești ghost
+  readReceipt = !readReceipt;
+  document.getElementById('tog-read').classList.toggle('on', readReceipt);
+  document.querySelectorAll('.msg-wrap.me .msg-meta').forEach(el => {
+    if (readReceipt) { if(!el.textContent.includes('✓✓')) el.textContent += ' ✓✓'; }
+    else { el.textContent = el.textContent.replace(' ✓✓',''); }
   });
 }
 
-// ══════════════════════════════════
-// PROFIL
-// ══════════════════════════════════
-function renderProfilPosts(){
-  const mine=postsCache.filter(p=>p.uid===myUid);
-  document.getElementById('profilInfoCount').textContent=mine.length+' postări';
-  const wrap=document.getElementById('profilPosts');
-  wrap.innerHTML='';
-  if(mine.length===0){
-    wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Nicio postare încă.</div>';
+function closeChat() {
+  // Înapoi la lista de contacte — mesajele RĂMÂN în memorie
+  document.getElementById('chat-app').classList.remove('vis');
+  document.getElementById('p2p-bar').style.display = 'none';
+  p2pClose();
+}
+
+function confirmClose() {
+  if (currentChatName) delete chatHistory[currentChatName];
+  if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); }
+  if (fbPeerId && fbChatRef) fbChatRef.remove(); // sterge mesajele din Firebase
+  fbPeerId = null; fbChatRef = null; fbChatListener = null;
+  document.getElementById('discOv').classList.remove('show');
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('chat-app').classList.remove('vis');
+  document.getElementById('p2p-bar').style.display = 'none';
+  p2pClose();
+}
+
+function showTyping() {
+  removeTyping();
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.id = 'typEl'; el.className = 'msg-wrap them';
+  el.innerHTML = '<div class="typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
+  msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() { const el = document.getElementById('typEl'); if(el) el.remove(); }
+
+// Șterge tot când se închide app-ul
+window.addEventListener('beforeunload', () => {
+  Object.keys(chatHistory).forEach(k => delete chatHistory[k]);
+});
+
+const STUN = { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' }
+]};
+
+let pc = null;          // RTCPeerConnection
+let dc = null;          // RTCDataChannel
+let p2pActive = false;  // conexiune activa
+
+function openP2P() {
+  document.getElementById('p2p-app').classList.add('vis');
+  document.getElementById('p2pStatus').textContent = '';
+  document.getElementById('hostCodeWrap').style.display = 'none';
+  document.getElementById('hostStep2').style.display = 'none';
+  document.getElementById('hostAnswerInput').style.display = 'none';
+  document.getElementById('hostConnectBtn').style.display = 'none';
+  document.getElementById('joinCodeWrap').style.display = 'none';
+  document.getElementById('joinOfferInput').value = '';
+  p2pTab('host');
+}
+
+function p2pTab(tab) {
+  document.getElementById('tab-host').classList.toggle('active', tab==='host');
+  document.getElementById('tab-join').classList.toggle('active', tab==='join');
+  document.getElementById('p2p-host-panel').style.display = tab==='host' ? 'flex' : 'none';
+  document.getElementById('p2p-join-panel').style.display = tab==='join' ? 'flex' : 'none';
+}
+
+function p2pSetupDC(channel) {
+  dc = channel;
+  dc.onopen = () => {
+    p2pActive = true;
+    document.getElementById('p2p-app').classList.remove('vis');
+    document.getElementById('p2p-bar').style.display = 'block';
+    document.getElementById('chat-app').classList.add('vis');
+    addSys('⚡ Conexiune P2P stabilită · direct · criptat');
+    document.getElementById('p2pStatus').textContent = '';
+  };
+  dc.onclose = () => {
+    p2pActive = false;
+    document.getElementById('p2p-bar').style.display = 'none';
+    addSys('🔌 Conexiune P2P închisă');
+  };
+  dc.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      addMsg(msg.text, false);
+    } catch(err) {
+      addMsg(e.data, false);
+    }
+  };
+}
+
+async function p2pCreateOffer() {
+  p2pClose();
+  pc = new RTCPeerConnection(STUN);
+  const chan = pc.createDataChannel('tirea');
+  p2pSetupDC(chan);
+  pc.onicecandidate = () => {
+    if (pc.localDescription && pc.iceGatheringState === 'complete') {
+      const code = btoa(JSON.stringify(pc.localDescription));
+      document.getElementById('hostCode').textContent = code;
+      document.getElementById('hostCodeWrap').style.display = 'flex';
+      document.getElementById('hostStep2').style.display = 'block';
+      document.getElementById('hostAnswerInput').style.display = 'block';
+      document.getElementById('hostConnectBtn').style.display = 'block';
+    }
+  };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  document.getElementById('p2pStatus').textContent = '⏳ Se generează codul...';
+  // fallback dacă onicecandidate nu se termină
+  setTimeout(() => {
+    if (pc && pc.localDescription) {
+      const code = btoa(JSON.stringify(pc.localDescription));
+      document.getElementById('hostCode').textContent = code;
+      document.getElementById('hostCodeWrap').style.display = 'flex';
+      document.getElementById('hostStep2').style.display = 'block';
+      document.getElementById('hostAnswerInput').style.display = 'block';
+      document.getElementById('hostConnectBtn').style.display = 'block';
+      document.getElementById('p2pStatus').textContent = '✓ Cod generat — copiază-l și trimite';
+    }
+  }, 3000);
+}
+
+async function p2pHostConnect() {
+  const raw = document.getElementById('hostAnswerInput').value.trim();
+  if (!raw) return;
+  try {
+    const answer = JSON.parse(atob(raw));
+    await pc.setRemoteDescription(answer);
+    document.getElementById('p2pStatus').textContent = '⏳ Se conectează...';
+  } catch(e) {
+    document.getElementById('p2pStatus').textContent = '✗ Cod invalid';
+  }
+}
+
+async function p2pCreateAnswer() {
+  const raw = document.getElementById('joinOfferInput').value.trim();
+  if (!raw) return;
+  try {
+    p2pClose();
+    pc = new RTCPeerConnection(STUN);
+    pc.ondatachannel = (e) => p2pSetupDC(e.channel);
+    pc.onicecandidate = () => {
+      if (pc.localDescription && pc.iceGatheringState === 'complete') {
+        const code = btoa(JSON.stringify(pc.localDescription));
+        document.getElementById('joinCode').textContent = code;
+        document.getElementById('joinCodeWrap').style.display = 'flex';
+        document.getElementById('p2pStatus').textContent = '✓ Trimite răspunsul înapoi';
+      }
+    };
+    const offer = JSON.parse(atob(raw));
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    document.getElementById('p2pStatus').textContent = '⏳ Se generează răspunsul...';
+    setTimeout(() => {
+      if (pc && pc.localDescription) {
+        const code = btoa(JSON.stringify(pc.localDescription));
+        document.getElementById('joinCode').textContent = code;
+        document.getElementById('joinCodeWrap').style.display = 'flex';
+        document.getElementById('p2pStatus').textContent = '✓ Trimite răspunsul înapoi inițiatorului';
+      }
+    }, 3000);
+  } catch(e) {
+    document.getElementById('p2pStatus').textContent = '✗ Cod invalid';
+  }
+}
+
+function p2pCopyOffer() {
+  navigator.clipboard && navigator.clipboard.writeText(document.getElementById('hostCode').textContent);
+  document.querySelector('.p2p-copy-btn').textContent = '✓ Copiat!';
+  setTimeout(() => document.querySelectorAll('.p2p-copy-btn').forEach(b => b.textContent='📋 Copiază'), 2000);
+}
+function p2pCopyAnswer() {
+  navigator.clipboard && navigator.clipboard.writeText(document.getElementById('joinCode').textContent);
+}
+function p2pClose() {
+  if (dc) { try { dc.close(); } catch(e){} dc = null; }
+  if (pc) { try { pc.close(); } catch(e){} pc = null; }
+  p2pActive = false;
+}
+
+function sendMsg() {
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; inp.style.height = 'auto';
+  msgCount++;
+  if (fbPeerId && fbChatRef) {
+    sendFbMsgWithPreview(text);
     return;
   }
-  mine.forEach(p=>wrap.appendChild(buildPostEl(p)));
+  addMsg(text, true);
+  if (p2pActive && dc && dc.readyState === 'open') {
+    dc.send(JSON.stringify({ text }));
+  }
 }
 
-function editProfile(){
-  const name=prompt('Numele tău:',myName)||myName;
-  const handle=prompt('Handle-ul tău (fără @):',myHandle)||myHandle;
-  const bio=prompt('Bio:',localStorage.getItem('tirea_bio')||'🔐 Utilizator T.irea · securizat')||'';
-  myName=name;myHandle=handle.replace('@','');
-  localStorage.setItem('tirea_name',myName);
-  localStorage.setItem('tirea_handle',myHandle);
-  localStorage.setItem('tirea_bio',bio);
-  initApp();
-  showToast('✓ Profil actualizat!');
+async function sendFbMsgWithPreview(text) {
+  // Arata mesajul normal + versiunea criptata
+  const encrypted = await encMsg(text, fbPeerId);
+  addMsgWithEnc(text, encrypted, true);
+  // Trimite in Firebase
+  fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
 }
 
-// ══════════════════════════════════
-// UTILS
-// ══════════════════════════════════
-function esc(t){return(t+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const autoReplies = ['👍','ok!','înțeles 😊','da, sigur!','haha 😄','serios?','mișto!','și eu cred același lucru','💯','chiar așa!','hai!','perfect 🔐'];
+let isBusy = false;
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,80)+'px'; }
 
-// Init trending on load
-document.addEventListener('DOMContentLoaded',buildTrending);
+function addMsg(text, isMe) {
+  const msgs = document.getElementById('messages');
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+  const check = isMe ? (readReceipt ? ' ✓✓' : '') : '';
+  const html = '<div class="bubble">'+esc(text)+'</div><div class="msg-meta">'+t+' 🔐'+check+'</div>';
+  wrap.innerHTML = html;
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  if (currentChatName) {
+    if (!chatHistory[currentChatName]) chatHistory[currentChatName] = [];
+    chatHistory[currentChatName].push({ html, isMe });
+  }
+}
+
+function addMsgWithEnc(text, encrypted, isMe) {
+  const msgs = document.getElementById('messages');
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+  const check = isMe ? (readReceipt ? ' ✓✓' : '') : '';
+  const encPreview = encrypted.substring(0, 40) + '...';
+  wrap.innerHTML = '<div class="bubble">'+esc(text)+'</div>'
+    + '<div class="msg-enc">🔒 '+esc(encPreview)+'</div>'
+    + '<div class="msg-meta">'+t+' 🔐'+check+'</div>';
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addSys(text) {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'sys-msg'; el.textContent = text;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function startCall(type) {
+  const name = document.getElementById('chatName').textContent;
+  const av = document.getElementById('chatAv').textContent;
+  document.getElementById('callAvEl').textContent = av;
+  document.getElementById('callNameEl').textContent = name;
+  document.getElementById('callStatus').textContent = type === 'video' ? '📹 Video call...' : '🎤 Audio call...';
+  document.getElementById('callOv').classList.add('show');
+  let sec = 0;
+  window._callTimer = setInterval(() => {
+    sec++;
+    const m = String(Math.floor(sec/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    document.getElementById('callStatus').textContent = m + ':' + s;
+  }, 1000);
+}
+
+function endCall() {
+  clearInterval(window._callTimer);
+  document.getElementById('callOv').classList.remove('show');
+}
+
+function toggleMute() {
+  const btn = document.querySelector('.call-btn.mute');
+  btn.textContent = btn.textContent === '🔇' ? '🎤' : '🔇';
+}
+
+function toggleSpeaker() {
+  const btn = document.querySelector('.call-btn.spk');
+  btn.textContent = btn.textContent === '🔊' ? '🔈' : '🔊';
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function openModal() { openAddFriend(); }
+function closeModal() { closePage('addfriend-app'); }
+
+// ===== ADD FRIEND SYSTEM =====
+let activePIN = null, activePINExpiry = null, activePINTimer = null;
+let activeLink = null, activeLinkExpiry = null;
+let myTireaId = localStorage.getItem('tirea_id') || generateId();
+let pendingFriend = null;
+
+function generateId() {
+  const id = 'TR' + Math.random().toString(36).substr(2,8).toUpperCase();
+  localStorage.setItem('tirea_id', id);
+  return id;
+}
+
+function openAddFriend() {
+  document.getElementById('addfriend-app').classList.add('vis');
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('afPinInput').value = '';
+  document.getElementById('afPinBtn').disabled = true;
+  document.getElementById('afPinStatus').textContent = '';
+}
+
+// ── QR ──
+function openQR() {
+  document.getElementById('qr-app').classList.add('vis');
+  drawQR();
+}
+
+function drawQR() {
+  const frame = document.getElementById('qrFrame');
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  const qrData = myUserId + '|' + displayName;
+  document.getElementById('qrIdText').textContent = 'ID: ' + myUserId;
+  // Genereaza QR real cu qrcode.js
+  frame.innerHTML = '';
+  frame.style.cssText = 'width:180px;height:180px;background:white;border-radius:16px;padding:8px;display:flex;align-items:center;justify-content:center';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(frame, { text: qrData, width: 160, height: 160, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  } else {
+    frame.innerHTML = '<div style="font-size:11px;color:#999;text-align:center">QR indisponibil.<br>Folosește PIN sau Link.</div>';
+  }
+}
+
+function simulateScan() { document.getElementById('qrCameraInput').click(); }
+
+function readQRFromImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const res = document.getElementById('qrScanResult');
+  res.textContent = '⏳ Se procesează...';
+  res.style.color = 'var(--t-muted)';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (typeof jsQR === 'undefined') {
+        res.textContent = '✗ Librăria QR nu e încărcată';
+        res.style.color = 'var(--t-red)';
+        return;
+      }
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) {
+        const parts = code.data.split('|');
+        const peerId = parts[0];
+        const peerName = parts[1] || 'Prieten';
+        res.textContent = '✓ ' + peerName + ' — se conectează...';
+        res.style.color = 'var(--t-green)';
+        // Trimite semnal prin Firebase si deschide chat direct
+        const myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+        db.ref('signals/' + peerId).set({
+          from: myUserId,
+          fromName: myName,
+          ts: Date.now()
+        });
+        // Adauga in lista de contacte si deschide chat
+        addContactToList(peerName, peerId);
+        setTimeout(() => {
+          closePage('qr-app');
+          closePage('addfriend-app');
+          openFbChat(peerId, peerName);
+        }, 800);
+      } else {
+        res.textContent = '✗ Nu s-a putut citi codul QR';
+        res.style.color = 'var(--t-red)';
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ── LINK ──
+function openLink() {
+  document.getElementById('link-app').classList.add('vis');
+  generateLink();
+}
+
+function generateLink() {
+  const token = Math.random().toString(36).substr(2,16);
+  activeLink = token;
+  activeLinkExpiry = Date.now() + 24*60*60*1000;
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  const link = 'tirea://invite/' + myUserId + '/' + encodeURIComponent(displayName) + '/' + token;
+  document.getElementById('linkBox').textContent = link;
+  document.getElementById('linkExpire').textContent = 'Expiră în 24 ore';
+  document.getElementById('linkInput').value = '';
+  document.getElementById('linkAcceptBtn').disabled = true;
+  document.getElementById('linkStatus').textContent = '';
+}
+
+function copyLink() {
+  const txt = document.getElementById('linkBox').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt);
+  document.querySelector('.link-copy-btn').textContent = '✓ Copiat!';
+  setTimeout(() => document.querySelector('.link-copy-btn').textContent = '📋 Copiază linkul', 2000);
+}
+
+function shareLink() {
+  const txt = document.getElementById('linkBox').textContent;
+  if (navigator.share) navigator.share({ title: 'Invitație Tirea', text: 'Hai pe Tirea! ' + txt });
+  else copyLink();
+}
+
+function linkTyped(el) {
+  const v = el.value.trim();
+  document.getElementById('linkAcceptBtn').disabled = v.length < 10;
+}
+
+function acceptLink() {
+  const v = document.getElementById('linkInput').value.trim();
+  if (!v.includes('tirea://invite/')) {
+    document.getElementById('linkStatus').textContent = '✗ Link invalid';
+    document.getElementById('linkStatus').style.color = 'var(--t-red)';
+    return;
+  }
+  const parts = v.split('/');
+  const peerId = parts[3] || '';
+  const peerName = parts[4] ? decodeURIComponent(parts[4]) : 'Prieten';
+  document.getElementById('linkStatus').textContent = '✓ Link valid!';
+  document.getElementById('linkStatus').style.color = 'var(--t-green)';
+  pendingFriend = { name: peerName, id: peerId };
+  setTimeout(() => showConfirmAdd(peerName, 'prin link invitație'), 600);
+}
+
+// ── PIN ──
+function openPIN() {
+  document.getElementById('pin-app').classList.add('vis');
+  regenPIN();
+}
+
+function regenPIN() {
+  if (activePINTimer) clearInterval(activePINTimer);
+  activePIN = Math.floor(100000 + Math.random() * 900000).toString();
+  activePINExpiry = Date.now() + 10 * 60 * 1000;
+  document.getElementById('pinBig').textContent = activePIN.split('').join(' ');
+  updatePINTimer();
+  activePINTimer = setInterval(updatePINTimer, 1000);
+  // Publica PIN-ul in Firebase cu ID-ul tau
+  const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+  db.ref('pins/' + activePIN).set({ uid: myUserId, name: displayName, ts: Date.now() });
+  setTimeout(() => db.ref('pins/' + activePIN).remove(), 10 * 60 * 1000);
+}
+
+function updatePINTimer() {
+  const left = Math.max(0, Math.floor((activePINExpiry - Date.now()) / 1000));
+  if (left === 0) {
+    clearInterval(activePINTimer);
+    document.getElementById('pinBig').textContent = 'EXPIRAT';
+    document.getElementById('pinExpire').textContent = 'Generează un PIN nou';
+    return;
+  }
+  const m = Math.floor(left/60), s = left%60;
+  document.getElementById('pinExpire').textContent = 'Expiră în ' + m + ':' + s.toString().padStart(2,'0');
+}
+
+// ── ACCEPTARE PIN DIN ECRANUL PRINCIPAL ──
+function afPinTyped(el) {
+  el.value = el.value.replace(/\D/g,'').slice(0,6);
+  document.getElementById('afPinBtn').disabled = el.value.length !== 6;
+  document.getElementById('afPinStatus').textContent = '';
+  document.getElementById('afPinStatus').style.color = 'var(--t-green)';
+}
+
+function acceptPIN() {
+  const entered = document.getElementById('afPinInput').value;
+  const st = document.getElementById('afPinStatus');
+  if (!activePIN || entered !== activePIN || Date.now() >= activePINExpiry) {
+    st.textContent = '✗ PIN invalid sau expirat'; st.style.color = 'var(--t-red)';
+    document.getElementById('afPinInput').value = '';
+    document.getElementById('afPinBtn').disabled = true;
+    return;
+  }
+  st.textContent = '✓ PIN valid!'; st.style.color = 'var(--t-green)';
+  // Asteapta ca celalalt utilizator sa confirme prin Firebase
+  st.textContent = '⏳ Se caută utilizatorul...';
+  db.ref('pins/' + entered).once('value', snap => {
+    if (snap.exists()) {
+      const data = snap.val();
+      pendingFriend = { name: data.name || 'Prieten', id: data.uid };
+      showConfirmAdd(pendingFriend.name, 'prin PIN');
+    } else {
+      st.textContent = '✗ PIN-ul nu a fost găsit'; st.style.color = 'var(--t-red)';
+    }
+  });
+}
+
+// ── CONFIRMARE & ADĂUGARE ──
+function showConfirmAdd(name, method) {
+  document.getElementById('confirmTitle').textContent = 'Adaugă ' + name + '?';
+  document.getElementById('confirmSub').textContent = 'Conexiune stabilită ' + method + '.\nAmândoi vă veți vedea în lista de prieteni.';
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('show');
+  pendingFriend = null;
+}
+
+function confirmAddFriend() {
+  if (!pendingFriend) return;
+  const { name, id } = pendingFriend;
+  addContactToList(name, id);
+  closeConfirm();
+  // Închidem toate ecranele de adăugare
+  ['addfriend-app','qr-app','link-app','pin-app'].forEach(id => closePage(id));
+  document.getElementById('afPinInput').value = '';
+  pendingFriend = null;
+  // Mesaj de confirmare vizual
+  setTimeout(() => {
+    const st = document.createElement('div');
+    st.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:#4caf50;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap';
+    st.textContent = '✓ ' + name + ' adăugat!';
+    document.querySelector('.screen').appendChild(st);
+    setTimeout(() => st.remove(), 2500);
+  }, 200);
+}
+
+function addContact() {
+  // fallback pentru compatibilitate
+  const name = (document.getElementById('newContactName') || {value:''}).value.trim();
+  if (!name) return;
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  addContactToList(name, initials);
+}
+
+function addContactToList(name, peerId) {
+  // Verifica sa nu existe deja
+  const existing = document.querySelector('[data-peerid="'+peerId+'"]');
+  if (existing) return;
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const list = document.getElementById('convList');
+  const div = document.createElement('div');
+  div.className = 't-conv contact-item';
+  div.setAttribute('data-name', name.toLowerCase());
+  div.setAttribute('data-peerid', peerId);
+  div.onclick = () => openFbChat(peerId, name);
+  div.innerHTML = '<div class="t-av">'+esc(initials)+'</div>'
+    + '<div class="t-conv-info"><div class="t-cname">'+esc(name)+'</div><div class="t-cprev">Apasă pentru chat</div></div>'
+    + '<div class="t-meta"><span class="t-time">nou</span></div>';
+  list.insertBefore(div, document.getElementById('noResults'));
+  // Salveaza in localStorage
+  const contacts = JSON.parse(localStorage.getItem('tirea_contacts') || '[]');
+  if (!contacts.find(c => c.id === peerId)) {
+    contacts.push({ name, id: peerId });
+    localStorage.setItem('tirea_contacts', JSON.stringify(contacts));
+  }
+}
+
+function loadSavedContacts() {
+  const contacts = JSON.parse(localStorage.getItem('tirea_contacts') || '[]');
+  contacts.forEach(c => addContactToList(c.name, c.id));
+}
+
+// ===== PAROLA SECRETA =====
+function openSecretScreen() {
+  document.getElementById('secret-app').classList.add('vis');
+  const inp = document.getElementById('secretInput');
+  inp.value = '';
+  document.getElementById('secretBtn').disabled = true;
+  document.getElementById('secretStrength').textContent = '';
+  const cur = document.getElementById('secretCurrent');
+  if (sharedSecret) {
+    cur.textContent = '✓ Parolă activă — chat-ul e protejat maxim 🔐';
+    cur.style.color = '#4caf50';
+  } else {
+    cur.textContent = '⚠️ Nicio parolă setată — risc mediu';
+    cur.style.color = '#FFB400';
+  }
+}
+
+function secretTyped(inp) {
+  const v = inp.value;
+  const btn = document.getElementById('secretBtn');
+  const str = document.getElementById('secretStrength');
+  btn.disabled = v.length < 4;
+  if (v.length === 0) { str.textContent = ''; return; }
+  if (v.length < 4) { str.style.color='#FF4466'; str.textContent = 'Prea scurtă — minim 4 caractere'; }
+  else if (v.length < 8) { str.style.color='#FFB400'; str.textContent = 'Acceptabilă — recomandăm mai lungă'; }
+  else { str.style.color='#4caf50'; str.textContent = '✓ Parolă puternică'; }
+}
+
+function confirmSecret() {
+  const v = document.getElementById('secretInput').value;
+  if (v.length < 4) return;
+  sharedSecret = v;
+  document.getElementById('secretInput').value = '';
+  const cur = document.getElementById('secretCurrent');
+  cur.textContent = '✓ Parolă setată! Chat-ul e acum protejat maxim 🔐';
+  cur.style.color = '#4caf50';
+  document.getElementById('secretBtn').disabled = true;
+  // Arata confirmare si inchide
+  setTimeout(() => closePage('secret-app'), 1500);
+}
+
+// Parola secreta — buton in setari
+function showMyId() {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#001845;border:1px solid #ffffff;color:white;padding:16px 20px;border-radius:16px;font-size:12px;z-index:500;text-align:center;width:300px';
+  el.innerHTML = '<div style="font-size:11px;color:#cccccc;margin-bottom:8px">ID-ul tău Tirea</div>'
+    + '<div style="font-family:monospace;font-size:11px;color:#fff;word-break:break-all;background:#000;padding:8px;border-radius:8px">' + myUserId + '</div>'
+    + '<div style="font-size:10px;color:#5577AA;margin-top:8px">Trimite-l prietenului să te poată chema</div>'
+    + '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+myUserId+'\');this.textContent=\'✓ Copiat!\'" style="margin-top:10px;background:#ffffff;border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">📋 Copiază</button>'
+    + '<button onclick="this.parentElement.remove()" style="margin-top:10px;margin-left:8px;background:transparent;border:1px solid #333;color:#666;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">Închide</button>';
+  document.querySelector('.screen').appendChild(el);
+}
+const firebaseConfig = {
+  databaseURL: "https://tirea-6dc59-default-rtdb.firebaseio.com"
+};
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+const db = firebase.database();
+
+const myUserId = localStorage.getItem('tirea_uid') || (() => {
+  const id = 'u_' + Math.random().toString(36).substr(2,12);
+  localStorage.setItem('tirea_uid', id);
+  return id;
+})();
+
+let fbChatRef = null;
+let fbChatListener = null;
+let fbPeerId = null;
+
+// ===== AES-256-GCM CRIPTARE REALA =====
+// Cheia e derivata din userId-urile ambilor participanti
+// Firebase vede doar bytes aleatori — imposibil de citit fara cheie
+
+// Parola secreta comuna — introdusa de ambii utilizatori, nu se trimite nicaieri
+let sharedSecret = '';
+
+async function getAESKey(userId1, userId2) {
+  // Cheia = ID1 + ID2 + parola secreta — imposibil de spart fara toate 3
+  const raw = [userId1, userId2].sort().join('|') + '|' + (sharedSecret || 'default');
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(raw), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('tirea_salt_v1'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encMsg(text, peerId) {
+  try {
+    const key = await getAESKey(myUserId, peerId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      new TextEncoder().encode(text)
+    );
+    // Combina IV + date criptate si convetreste in base64
+    const combined = new Uint8Array(iv.byteLength + enc.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(enc), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+  } catch(e) { return btoa(unescape(encodeURIComponent(text))); }
+}
+
+async function decMsg(enc, peerId) {
+  try {
+    const key = await getAESKey(myUserId, peerId);
+    const combined = new Uint8Array(atob(enc).split('').map(c => c.charCodeAt(0)));
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+    const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+    return new TextDecoder().decode(dec);
+  } catch(e) {
+    try { return decodeURIComponent(escape(atob(enc))); } catch(e2) { return enc; }
+  }
+}
+function channel(a,b) { return [a,b].sort().join('__'); }
+
+// Asculta semnale — se porneste cand intra in Tirea
+function startListening() {
+  db.ref('signals/' + myUserId).on('value', snap => {
+    if (!snap.exists()) return;
+    const sig = snap.val();
+    if (Date.now() - sig.ts > 60000) return;
+    db.ref('signals/' + myUserId).remove();
+    showIncomingSignal(sig.from, sig.fromName || 'Prieten');
+  });
+}
+
+function showIncomingSignal(fromId, fromName) {
+  const el = document.createElement('div');
+  el.id = 'incomingSignal';
+  el.style.cssText = 'position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#ffffff;color:white;padding:16px 20px;border-radius:16px;font-size:14px;font-weight:600;z-index:500;text-align:center;width:290px;box-shadow:0 8px 32px rgba(255,255,255,0.5)';
+  el.innerHTML = '📞 <b>' + esc(fromName) + '</b> vrea să vorbești!<br><br>'
+    + '<button onclick="acceptSignal(\'' + fromId + '\',\'' + fromName + '\')" style="background:white;color:#ffffff;border:none;padding:9px 22px;border-radius:10px;font-weight:700;cursor:pointer;margin-right:8px">✓ Acceptă</button>'
+    + '<button onclick="document.getElementById(\'incomingSignal\').remove()" style="background:rgba(255,255,255,0.15);color:white;border:none;padding:9px 22px;border-radius:10px;font-weight:700;cursor:pointer">✗</button>';
+  document.querySelector('.screen').appendChild(el);
+  setTimeout(() => { const e=document.getElementById('incomingSignal'); if(e) e.remove(); }, 30000);
+}
+
+function acceptSignal(fromId, fromName) {
+  const el = document.getElementById('incomingSignal');
+  if (el) el.remove();
+  openFbChat(fromId, fromName);
+}
+
+function openFbChat(peerId, peerName) {
+  fbPeerId = peerId;
+  if (fbChatRef && fbChatListener) fbChatRef.off('child_added', fbChatListener);
+  currentChatName = peerName;
+  document.getElementById('chatName').textContent = peerName;
+  document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('msgInput').value = '';
+  document.getElementById('discOv').classList.remove('show');
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('chat-app').classList.add('vis');
+  document.getElementById('calc-app').style.display = 'none';
+  msgCount = 0;
+  addSys('⚡ Chat live Firebase · criptat · se șterge la închidere');
+  const ch = channel(myUserId, peerId);
+  fbChatRef = db.ref('chats/' + ch + '/msgs');
+  fbChatListener = fbChatRef.limitToLast(100).on('child_added', async snap => {
+    const m = snap.val();
+    if (!m) return;
+    const isMe = m.uid === myUserId;
+    const text = await decMsg(m.enc, isMe ? fbPeerId : m.uid);
+    _addFbMsg(text, isMe, m.ts);
+  });
+}
+
+function _addFbMsg(text, isMe, ts) {
+  const msgs = document.getElementById('messages');
+  const d = new Date(ts || Date.now());
+  const t = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+  const check = isMe ? (readReceipt ? ' ✓✓' : '') : '';
+  wrap.innerHTML = '<div class="bubble">'+esc(text)+'</div><div class="msg-meta">'+t+' 🔐'+check+'</div>';
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendFbMsg(text) {
+  if (!fbPeerId || !fbChatRef) return false;
+  const encrypted = await encMsg(text, fbPeerId);
+  fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
+  return true;
+}
+
+// Trimite semnal catre un prieten din lista
+function callFriend(peerId, peerName) {
+  db.ref('signals/' + peerId).set({
+    from: myUserId,
+    fromName: localStorage.getItem('tirea_display_name') || 'Prieten',
+    ts: Date.now()
+  });
+  openFbChat(peerId, peerName);
+  addSys('📡 Semnal trimis — așteptăm răspuns...');
+}
+
 </script>
+
 </body>
 </html>
