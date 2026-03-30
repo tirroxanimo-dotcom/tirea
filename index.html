@@ -546,6 +546,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="t-brand-ver">v3.0 · secure</div>
       </div>
       <div class="t-btn-row">
+        <button class="hide-btn" onclick="enableShake()" id="shakeBtn">📳 Shake</button>
         <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
         <button class="panic-btn" onclick="panicMode()">🚨 Panic</button>
       </div>
@@ -924,49 +925,51 @@ function scalePhone() {
 window.addEventListener('resize', scalePhone);
 document.addEventListener('DOMContentLoaded', scalePhone);
 
-// SHAKE TO HIDE — scutura sa ascunda Tirea
-(function() {
-  var THRESH = 25, last = 0, lx = null, ly = null, lz = null;
-  var shakeCount = 0, shakeTimer = null;
+// SHAKE TO HIDE
+var shakeEnabled = false;
+var _sx=null,_sy=null,_sz=null,_slast=0;
 
-  function req() {
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      DeviceMotionEvent.requestPermission().then(function(r) {
-        if (r === 'granted') listenShake();
-      }).catch(function(){});
-    } else {
-      listenShake();
-    }
-  }
-
-  function listenShake() {
+function enableShake() {
+  if (shakeEnabled) return;
+  function startListen() {
+    shakeEnabled = true;
     window.addEventListener('devicemotion', function(e) {
-      var a = e.accelerationIncludingGravity; if (!a) return;
-      var now = Date.now(); if (now - last < 100) return; last = now;
-      if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
-      var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
-      lx=a.x; ly=a.y; lz=a.z;
-      if (d > THRESH) {
-        shakeCount++;
-        if (shakeTimer) clearTimeout(shakeTimer);
-        shakeTimer = setTimeout(function(){ shakeCount = 0; }, 800);
-        if (shakeCount >= 2) {
-          shakeCount = 0;
-          var t = document.getElementById('tirea-app');
-          if (t && t.classList.contains('vis')) {
-            // vibratii scurte ca feedback
-            if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
-            hideTirea();
-          }
+      if (!shakeEnabled) return;
+      var a = e.accelerationIncludingGravity || e.acceleration;
+      if (!a) return;
+      var now = Date.now();
+      if (now - _slast < 100) return;
+      _slast = now;
+      if (_sx === null) { _sx=a.x;_sy=a.y;_sz=a.z; return; }
+      var d = Math.abs(a.x-_sx)+Math.abs(a.y-_sy)+Math.abs(a.z-_sz);
+      _sx=a.x;_sy=a.y;_sz=a.z;
+      if (d > 30) {
+        var t = document.getElementById('tirea-app');
+        if (t && t.classList.contains('vis')) {
+          if (navigator.vibrate) navigator.vibrate([50,30,50]);
+          hideTirea();
         }
       }
     });
   }
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(function(r) {
+      if (r === 'granted') { startListen(); showShakeToast('✓ Shake activat!'); }
+      else { showShakeToast('✗ Permisiune refuzată'); }
+    }).catch(function() { showShakeToast('✗ Eroare'); });
+  } else {
+    startListen();
+    showShakeToast('✓ Shake activat!');
+  }
+}
 
-  document.addEventListener('DOMContentLoaded', function() {
-    document.body.addEventListener('click', req, { once: true });
-  });
-})();
+function showShakeToast(msg) {
+  var el = document.createElement('div');
+  el.style.cssText = 'position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:#4caf50;color:white;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:600;z-index:300;white-space:nowrap';
+  el.textContent = msg;
+  document.querySelector('.screen').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2000);
+}
 
 let storedHash = localStorage.getItem('tirea_hash') || null;
 let cur = '0', expr = '', waitPct = false, ghostOn = false, pin = '', msgCount = 0;
