@@ -71,6 +71,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 /* 0 — cerc normal (nu mai e lat, Samsung One UI modern) */
 .cb.zero { grid-column: span 1; justify-content: center; padding-left: 0; }
 
+@keyframes scanAnim { 0%{top:10%} 50%{top:85%} 100%{top:10%} }
 .reset-row { text-align: center; padding: 2px; background: var(--s-bg); }
 .reset-btn { background: transparent; border: none; color: #e0e0e0; font-size: 10px; cursor: pointer; }
 .samsung-nav { height: 46px; background: var(--s-bg); display: flex; align-items: center; justify-content: center; gap: 32px; border-top: 1px solid #ddd; }
@@ -821,10 +822,21 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
       <button class="qr-scan-btn" onclick="startQRScanner()">📷 Scanează QR live</button>
       <div id="qrScannerWrap" style="display:none;width:100%;position:relative;border-radius:16px;overflow:hidden;background:#000;">
-        <video id="qrVideo" style="width:100%;height:220px;object-fit:cover;" autoplay playsinline muted></video>
+        <video id="qrVideo" style="width:100%;height:240px;object-fit:cover;display:block;" autoplay playsinline muted></video>
         <canvas id="qrCanvas" style="display:none"></canvas>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160px;height:160px;border:3px solid #4caf50;border-radius:12px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.4);"></div>
-        <button onclick="stopQRScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;">✕</button>
+        <!-- overlay intucat -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="position:relative;width:180px;height:180px;">
+            <!-- colturi verzi -->
+            <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #4caf50;border-left:3px solid #4caf50;border-radius:4px 0 0 0;"></div>
+            <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #4caf50;border-right:3px solid #4caf50;border-radius:0 4px 0 0;"></div>
+            <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #4caf50;border-left:3px solid #4caf50;border-radius:0 0 0 4px;"></div>
+            <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #4caf50;border-right:3px solid #4caf50;border-radius:0 0 4px 0;"></div>
+            <!-- linie de scanare animata -->
+            <div id="scanLine" style="position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,#4caf50,transparent);animation:scanAnim 1.5s infinite;top:50%;"></div>
+          </div>
+        </div>
+        <button onclick="stopQRScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;pointer-events:all;">✕</button>
       </div>
       <div class="qr-scan-result" id="qrScanResult"></div>
     </div>
@@ -1700,19 +1712,19 @@ function startQRScanner() {
   var wrap = document.getElementById('qrScannerWrap');
   var video = document.getElementById('qrVideo');
   var res = document.getElementById('qrScanResult');
-  res.textContent = '';
+  res.textContent = 'Îndreaptă camera spre codul QR...';
+  res.style.color = 'var(--t-muted)';
   wrap.style.display = 'block';
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
     .then(function(stream) {
       qrStream = stream;
       video.srcObject = stream;
       video.play();
-      qrScanInterval = setInterval(function() { scanQRFrame(); }, 300);
+      qrScanInterval = setInterval(scanQRFrame, 250);
     })
-    .catch(function(err) {
+    .catch(function() {
       wrap.style.display = 'none';
-      res.textContent = '✗ Camera indisponibilă — verifică permisiunile';
+      res.textContent = '✗ Nu s-a putut accesa camera';
       res.style.color = 'var(--t-red)';
     });
 }
@@ -1723,16 +1735,14 @@ function scanQRFrame() {
   if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  var ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
   if (typeof jsQR === 'undefined') return;
   var code = jsQR(imageData.data, imageData.width, imageData.height);
   if (code) {
     stopQRScanner();
     var parts = code.data.split('|');
-    var peerId = parts[0];
-    var peerName = parts[1] || 'Prieten';
+    var peerId = parts[0], peerName = parts[1] || 'Prieten';
     var res = document.getElementById('qrScanResult');
     res.textContent = '✓ ' + peerName + ' găsit!';
     res.style.color = 'var(--t-green)';
@@ -1740,17 +1750,12 @@ function scanQRFrame() {
     var myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
     db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
     addContactToList(peerName, peerId);
-    setTimeout(function() {
-      closePage('qr-app');
-      closePage('addfriend-app');
-      openFbChat(peerId, peerName);
-    }, 800);
+    setTimeout(function() { closePage('qr-app'); closePage('addfriend-app'); openFbChat(peerId, peerName); }, 800);
   }
 }
 
 function stopQRScanner() {
-  clearInterval(qrScanInterval);
-  qrScanInterval = null;
+  clearInterval(qrScanInterval); qrScanInterval = null;
   if (qrStream) { qrStream.getTracks().forEach(function(t){ t.stop(); }); qrStream = null; }
   var wrap = document.getElementById('qrScannerWrap');
   if (wrap) wrap.style.display = 'none';
