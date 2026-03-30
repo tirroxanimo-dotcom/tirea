@@ -546,7 +546,6 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="t-brand-ver">v3.0 · secure</div>
       </div>
       <div class="t-btn-row">
-        <button class="hide-btn" onclick="enableShake()" id="shakeBtn">⚡ Auto-disp</button>
         <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
         <button class="panic-btn" onclick="panicMode()">🚨 Panic</button>
       </div>
@@ -820,9 +819,13 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <input type="file" id="qrCameraInput" accept="image/*" capture="environment" style="display:none" onchange="readQRFromImage(this)">
-      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează QR</button>
-      <div class="qr-scan-result" id="qrScanResult"></div>
+      <button class="qr-scan-btn" onclick="startQRScanner()">📷 Scanează QR live</button>
+      <div id="qrScannerWrap" style="display:none;width:100%;position:relative;border-radius:16px;overflow:hidden;background:#000;">
+        <video id="qrVideo" style="width:100%;height:220px;object-fit:cover;" autoplay playsinline muted></video>
+        <canvas id="qrCanvas" style="display:none"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160px;height:160px;border:3px solid #4caf50;border-radius:12px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.4);"></div>
+        <button onclick="stopQRScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
       <div class="qr-scan-result" id="qrScanResult"></div>
     </div>
   </div>
@@ -925,51 +928,29 @@ function scalePhone() {
 window.addEventListener('resize', scalePhone);
 document.addEventListener('DOMContentLoaded', scalePhone);
 
-// SHAKE TO HIDE
-var shakeEnabled = false;
-var _sx=null,_sy=null,_sz=null,_slast=0;
-
-function enableShake() {
-  if (shakeEnabled) return;
-  function startListen() {
-    shakeEnabled = true;
-    document.getElementById('shakeBtn').textContent = '✓ Auto-disp';
-    window.addEventListener('devicemotion', function(e) {
-      if (!shakeEnabled) return;
-      var a = e.accelerationIncludingGravity || e.acceleration;
-      if (!a) return;
-      var now = Date.now();
-      if (now - _slast < 100) return;
-      _slast = now;
-      if (_sx === null) { _sx=a.x;_sy=a.y;_sz=a.z; return; }
-      var d = Math.abs(a.x-_sx)+Math.abs(a.y-_sy)+Math.abs(a.z-_sz);
-      _sx=a.x;_sy=a.y;_sz=a.z;
-      if (d > 30) {
-        var t = document.getElementById('tirea-app');
-        if (t && t.classList.contains('vis')) {
-          if (navigator.vibrate) navigator.vibrate([50,30,50]);
-          hideTirea();
-        }
-      }
-    });
+// SHAKE TO HIDE — scutura sa ascunda Tirea
+(function() {
+  var THRESH = 20, last = 0, lx = null, ly = null, lz = null;
+  function req() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().catch(function(){});
+    }
   }
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    DeviceMotionEvent.requestPermission().then(function(r) {
-      if (r === 'granted') { startListen(); }
-      else { showShakeToast('✗ Permisiune refuzată'); }
-    }).catch(function() { showShakeToast('✗ Eroare'); });
-  } else {
-    startListen();
-  }
-}
-
-function showShakeToast(msg) {
-  var el = document.createElement('div');
-  el.style.cssText = 'position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:#4caf50;color:white;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:600;z-index:300;white-space:nowrap';
-  el.textContent = msg;
-  document.querySelector('.screen').appendChild(el);
-  setTimeout(function(){ el.remove(); }, 2000);
-}
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', req, { once: true });
+  });
+  window.addEventListener('devicemotion', function(e) {
+    var a = e.accelerationIncludingGravity; if (!a) return;
+    var now = Date.now(); if (now - last < 80) return; last = now;
+    if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
+    var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
+    lx=a.x; ly=a.y; lz=a.z;
+    if (d > THRESH) {
+      var t = document.getElementById('tirea-app');
+      if (t && t.classList.contains('vis')) hideTirea();
+    }
+  });
+})();
 
 let storedHash = localStorage.getItem('tirea_hash') || null;
 let cur = '0', expr = '', waitPct = false, ghostOn = false, pin = '', msgCount = 0;
@@ -1711,7 +1692,71 @@ function drawQR() {
   }
 }
 
-function simulateScan() { document.getElementById('qrCameraInput').click(); }
+// ── QR LIVE SCANNER ──
+var qrScanInterval = null;
+var qrStream = null;
+
+function startQRScanner() {
+  var wrap = document.getElementById('qrScannerWrap');
+  var video = document.getElementById('qrVideo');
+  var res = document.getElementById('qrScanResult');
+  res.textContent = '';
+  wrap.style.display = 'block';
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(stream) {
+      qrStream = stream;
+      video.srcObject = stream;
+      video.play();
+      qrScanInterval = setInterval(function() { scanQRFrame(); }, 300);
+    })
+    .catch(function(err) {
+      wrap.style.display = 'none';
+      res.textContent = '✗ Camera indisponibilă — verifică permisiunile';
+      res.style.color = 'var(--t-red)';
+    });
+}
+
+function scanQRFrame() {
+  var video = document.getElementById('qrVideo');
+  var canvas = document.getElementById('qrCanvas');
+  if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (typeof jsQR === 'undefined') return;
+  var code = jsQR(imageData.data, imageData.width, imageData.height);
+  if (code) {
+    stopQRScanner();
+    var parts = code.data.split('|');
+    var peerId = parts[0];
+    var peerName = parts[1] || 'Prieten';
+    var res = document.getElementById('qrScanResult');
+    res.textContent = '✓ ' + peerName + ' găsit!';
+    res.style.color = 'var(--t-green)';
+    if (navigator.vibrate) navigator.vibrate(100);
+    var myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+    db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
+    addContactToList(peerName, peerId);
+    setTimeout(function() {
+      closePage('qr-app');
+      closePage('addfriend-app');
+      openFbChat(peerId, peerName);
+    }, 800);
+  }
+}
+
+function stopQRScanner() {
+  clearInterval(qrScanInterval);
+  qrScanInterval = null;
+  if (qrStream) { qrStream.getTracks().forEach(function(t){ t.stop(); }); qrStream = null; }
+  var wrap = document.getElementById('qrScannerWrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function simulateScan() { startQRScanner(); }
 
 function readQRFromImage(input) {
   const file = input.files[0];
