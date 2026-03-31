@@ -1501,22 +1501,31 @@ function closeChat() {
   fbChatRef = null; fbPeerId = null;
   _aesKeyCache = {};
 
-  // Curata ecranul
+  // Curata ecranul de chat
   document.getElementById('messages').innerHTML = '';
-  const chatEl = document.getElementById('chat-app');
-  chatEl.classList.remove('vis');
-  chatEl.removeAttribute('style');
+  document.getElementById('p2p-bar').style.display = 'none';
+  p2pClose();
 
-  // Restaureaza Tirea
-  Array.from(document.querySelector('.screen').children).forEach(el => {
-    if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
+  // Ascunde TOATE ecranele (inclusiv sub-pagini QR, link, pin, addfriend etc.)
+  const allScreens = ['chat-app','calc-app','profil-app','setari-app',
+    'addfriend-app','qr-app','link-app','pin-app','p2p-app','secret-app',
+    'setup-app','name-setup'];
+  allScreens.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('vis','show');
+    el.removeAttribute('style');
   });
+
+  // Asigura-te ca unlock si discOv sunt ascunse
+  document.getElementById('unlockOv').classList.remove('show');
+  document.getElementById('discOv').classList.remove('show');
+
+  // Status bar si tirea-app
   document.getElementById('sb').removeAttribute('style');
   document.getElementById('sb').className = 'status-bar sb-tirea';
   document.getElementById('tirea-app').classList.add('vis');
-  document.getElementById('calc-app').style.display = 'none';
-  document.getElementById('p2p-bar').style.display = 'none';
-  p2pClose();
+  navTo('chat');
 }
 
 function confirmClose() {
@@ -2383,16 +2392,20 @@ function goToChat(peerId, peerName) {
     fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
     _aesKeyCache = {};
     document.getElementById('messages').innerHTML = '';
-    const chatEl = document.getElementById('chat-app');
-    chatEl.classList.remove('vis');
-    chatEl.removeAttribute('style');
-    Array.from(document.querySelector('.screen').children).forEach(el => {
-      if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
+    document.getElementById('p2p-bar').style.display = 'none';
+    ['chat-app','calc-app','profil-app','setari-app','addfriend-app',
+     'qr-app','link-app','pin-app','p2p-app','secret-app'].forEach(function(sid){
+      var sel = document.getElementById(sid);
+      if (!sel) return;
+      sel.classList.remove('vis','show');
+      sel.removeAttribute('style');
     });
+    document.getElementById('unlockOv').classList.remove('show');
+    document.getElementById('discOv').classList.remove('show');
     document.getElementById('sb').removeAttribute('style');
     document.getElementById('sb').className = 'status-bar sb-tirea';
     document.getElementById('tirea-app').classList.add('vis');
-    document.getElementById('calc-app').style.display = 'none';
+    navTo('chat');
   });
 }
 
