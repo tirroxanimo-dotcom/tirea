@@ -2378,8 +2378,7 @@ function goToChat(peerId, peerName) {
   chRootRef.on('value', snap => {
     if (snap.exists()) { chatHadMessages = true; return; }
     if (!chatHadMessages) return;
-    if (fbPeerId !== peerId) return;
-    // Inchide chat pe al doilea telefon
+    // Firebase sters — curata ecranul pe celalt telefon
     try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
     try { chRootRef.off('value'); } catch(e){}
     fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
