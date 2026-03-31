@@ -1811,13 +1811,7 @@ function tickQRScan(stream) {
     db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
     addContactToList(peerName, peerId);
     setTimeout(() => {
-      // Inchide tot si deschide chat direct
-      document.querySelectorAll('[id$="-app"]').forEach(e => {
-        e.classList.remove('vis');
-        e.style.display = '';
-      });
-      document.getElementById('calc-app').style.display = 'none';
-      openFbChat(peerId, peerName);
+      goToChat(peerId, peerName);
     }, 500);
   }
 }
@@ -2301,20 +2295,21 @@ function goToChat(peerId, peerName) {
     _addFbMsg(text, false, m.ts);
   });
 
-  // Cand celalalt iese, curatum si noi
+  // Cand celalalt iese, curatam si noi — dar doar dupa ce au existat mesaje
+  let chatHadMessages = false;
   db.ref('chats/' + ch).on('value', snap => {
-    if (!snap.exists() && fbPeerId === peerId) {
-      try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
-      fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
-      document.getElementById('messages').innerHTML = '';
-      // Restaureaza ecranele
-      Array.from(document.querySelector('.screen').children).forEach(el => {
-        el.style.display = '';
-        el.classList.remove('vis');
-      });
-      document.getElementById('tirea-app').classList.add('vis');
-      document.getElementById('sb').style.zIndex = '';
-    }
+    if (snap.exists()) { chatHadMessages = true; return; }
+    if (!chatHadMessages) return; // chatul era gol de la inceput, ignoram
+    if (fbPeerId !== peerId) return;
+    try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
+    fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
+    document.getElementById('messages').innerHTML = '';
+    Array.from(document.querySelector('.screen').children).forEach(el => {
+      el.style.display = '';
+      el.classList.remove('vis');
+    });
+    document.getElementById('tirea-app').classList.add('vis');
+    document.getElementById('sb').style.zIndex = '';
   });
 }
 
