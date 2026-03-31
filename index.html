@@ -1426,8 +1426,13 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Înapoi la lista de contacte — mesajele RĂMÂN în memorie
+  // Sterge mesajele din Firebase la inchidere
+  if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); fbChatListener = null; }
+  if (fbPeerId && fbChatRef) { fbChatRef.remove(); }
+  fbPeerId = null; fbChatRef = null;
+  document.getElementById('messages').innerHTML = '';
   document.getElementById('chat-app').classList.remove('vis');
+  document.getElementById('tirea-app').classList.add('vis');
   document.getElementById('p2p-bar').style.display = 'none';
   p2pClose();
 }
