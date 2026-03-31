@@ -1637,11 +1637,9 @@ function sendMsg() {
 }
 
 async function sendFbMsgWithPreview(text) {
-  // Afiseaza imediat local
   addMsg(text, true);
-  // Trimite in Firebase — listener ignora mesajele proprii
-  const encrypted = await encMsg(text, fbPeerId);
-  fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
+  const enc = await encMsg(text, fbPeerId);
+  fbChatRef.push({ uid: myUserId, enc: enc, ts: Date.now() });
 }
 
 const autoReplies = ['👍','ok!','înțeles 😊','da, sigur!','haha 😄','serios?','mișto!','și eu cred același lucru','💯','chiar așa!','hai!','perfect 🔐'];
@@ -2160,45 +2158,49 @@ let fbPeerId = null;
 // Parola secreta comuna — introdusa de ambii utilizatori, nu se trimite nicaieri
 let sharedSecret = '';
 
-async function getAESKey(userId1, userId2) {
-  // Cheia = ID1 + ID2 + parola secreta — imposibil de spart fara toate 3
-  const raw = [userId1, userId2].sort().join('|') + '|' + (sharedSecret || 'default');
+// ===== AES-256-GCM CRIPTARE =====
+// Cheia e derivata din ID-urile ambilor useri sortate — aceeasi pe ambele telefoane
+let _aesKeyCache = {};
+
+async function getAESKey(id1, id2) {
+  const keyId = [id1, id2].sort().join('|');
+  if (_aesKeyCache[keyId]) return _aesKeyCache[keyId];
+  const secret = (sharedSecret || '') + keyId;
   const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(raw), { name: 'PBKDF2' }, false, ['deriveKey']
+    'raw', new TextEncoder().encode(secret),
+    { name: 'PBKDF2' }, false, ['deriveKey']
   );
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: new TextEncoder().encode('tirea_salt_v1'), iterations: 100000, hash: 'SHA-256' },
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('tirea_v3'), iterations: 100000, hash: 'SHA-256' },
     keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
   );
+  _aesKeyCache[keyId] = key;
+  return key;
 }
 
 async function encMsg(text, peerId) {
   try {
     const key = await getAESKey(myUserId, peerId);
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const enc = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      new TextEncoder().encode(text)
-    );
-    // Combina IV + date criptate si convetreste in base64
-    const combined = new Uint8Array(iv.byteLength + enc.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(enc), iv.byteLength);
-    return btoa(String.fromCharCode(...combined));
+    const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    const buf = new Uint8Array(12 + enc.byteLength);
+    buf.set(iv, 0);
+    buf.set(new Uint8Array(enc), 12);
+    return btoa(String.fromCharCode(...buf));
   } catch(e) { return btoa(unescape(encodeURIComponent(text))); }
 }
 
-async function decMsg(enc, peerId) {
+async function decMsg(enc, senderId) {
+  // Cheia e derivata din cei doi useri sortati — nu conteaza cine decripteaza
   try {
-    const key = await getAESKey(myUserId, peerId);
-    const combined = new Uint8Array(atob(enc).split('').map(c => c.charCodeAt(0)));
-    const iv = combined.slice(0, 12);
-    const data = combined.slice(12);
+    const key = await getAESKey(myUserId, senderId);
+    const buf = Uint8Array.from(atob(enc), c => c.charCodeAt(0));
+    const iv = buf.slice(0, 12);
+    const data = buf.slice(12);
     const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
     return new TextDecoder().decode(dec);
   } catch(e) {
-    try { return decodeURIComponent(escape(atob(enc))); } catch(e2) { return enc; }
+    try { return decodeURIComponent(escape(atob(enc))); } catch(e2) { return '🔒'; }
   }
 }
 function channel(a,b) { return [a,b].sort().join('__'); }
@@ -2276,7 +2278,9 @@ function goToChat(peerId, peerName) {
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('msgInput').value = '';
-  document.getElementById('discOv').classList.remove('show');
+  const discOv = document.getElementById('discOv');
+  discOv.classList.remove('show');
+  discOv.style.display = 'none';
   msgCount = 0;
 
   addSys('🔐 Chat criptat AES-256 · se șterge la închidere');
@@ -2291,6 +2295,7 @@ function goToChat(peerId, peerName) {
     seenKeys.add(snap.key);
     const m = snap.val();
     if (!m || m.uid === myUserId) return;
+    // Decripteaza folosind ID-ul expeditorului
     const text = await decMsg(m.enc, m.uid);
     _addFbMsg(text, false, m.ts);
   });
