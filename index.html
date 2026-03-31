@@ -1808,10 +1808,14 @@ function tickQRScan(stream) {
     db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
     addContactToList(peerName, peerId);
     setTimeout(() => {
-      closePage('qr-app');
-      closePage('addfriend-app');
+      // Inchide tot si deschide chat direct
+      document.querySelectorAll('[id$="-app"]').forEach(e => {
+        e.classList.remove('vis');
+        e.style.display = '';
+      });
+      document.getElementById('calc-app').style.display = 'none';
       openFbChat(peerId, peerName);
-    }, 800);
+    }, 500);
   }
 }
 
@@ -2236,16 +2240,50 @@ function showIncomingSignal(fromId, fromName) {
 
   document.getElementById('acceptBtn').onclick = function() {
     el.remove();
-    // Inchide ABSOLUT TOATE ecranele posibile
-    document.querySelectorAll('[id$="-app"]').forEach(e => {
+    var pid = window._pendingSignalId;
+    var pname = window._pendingSignalName;
+    // Ascunde tot
+    document.querySelectorAll('[id$="-app"]').forEach(function(e) {
       e.classList.remove('vis');
-      if (e.id === 'calc-app') e.style.display = 'none';
+      e.style.display = '';
     });
-    // Mica pauza ca sa se proceseze DOM-ul
-    setTimeout(function() {
-      addContactToList(window._pendingSignalName, window._pendingSignalId);
-      openFbChat(window._pendingSignalId, window._pendingSignalName);
-    }, 50);
+    document.getElementById('calc-app').style.display = 'none';
+    // Seteaza chat direct
+    fbPeerId = pid;
+    currentChatName = pname;
+    document.getElementById('chatName').textContent = pname;
+    document.getElementById('chatAv').textContent = pname.substr(0,2).toUpperCase();
+    document.getElementById('messages').innerHTML = '';
+    document.getElementById('msgInput').value = '';
+    document.getElementById('discOv').classList.remove('show');
+    document.getElementById('sb').className = 'status-bar sb-tirea';
+    document.getElementById('chat-app').style.display = 'flex';
+    document.getElementById('chat-app').classList.add('vis');
+    addContactToList(pname, pid);
+    // Porneste listener Firebase
+    if (fbChatRef && fbChatListener) { try{fbChatRef.off('child_added', fbChatListener);}catch(e){} fbChatListener = null; fbChatRef = null; }
+    var ch = [myUserId, pid].sort().join('__');
+    window._currentChatPath = 'chats/' + ch;
+    fbChatRef = db.ref('chats/' + ch + '/msgs');
+    var seenKeys = new Set();
+    fbChatListener = fbChatRef.limitToLast(50).on('child_added', async function(snap) {
+      if (seenKeys.has(snap.key)) return;
+      seenKeys.add(snap.key);
+      var m = snap.val();
+      if (!m || m.uid === myUserId) return;
+      var text = await decMsg(m.enc, m.uid);
+      _addFbMsg(text, false, m.ts);
+    });
+    db.ref('chats/' + ch).on('value', function(snap) {
+      if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
+        if (fbChatRef && fbChatListener) { try{fbChatRef.off('child_added', fbChatListener);}catch(e){} fbChatListener = null; fbChatRef = null; }
+        fbPeerId = null; window._currentChatPath = null;
+        document.getElementById('messages').innerHTML = '';
+        document.getElementById('chat-app').classList.remove('vis');
+        document.getElementById('tirea-app').classList.add('vis');
+      }
+    });
+    addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
   };
   document.getElementById('rejectBtn').onclick = function() {
     el.remove();
