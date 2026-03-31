@@ -606,7 +606,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
-      <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
+
       <button class="t-nav-item" id="nav-profil" onclick="openProfil()"><span class="t-nav-icon">👤</span><div class="t-nav-label">Profil</div></button>
       <button class="t-nav-item" id="nav-setari" onclick="openSetari()"><span class="t-nav-icon">⚙️</span><div class="t-nav-label">Setări</div></button>
     </div>
@@ -706,7 +706,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="chat-peer-name" id="chatName">Ana N.</div>
         <div class="chat-peer-status"><span class="live-dot"></span><span>live · AES-256-GCM</span></div>
       </div>
-
+      <button class="chat-act-btn" onclick="openP2P()" title="Chat P2P real">⚡</button>
+      <button class="chat-act-btn" onclick="startCall('audio')">🎤</button>
+      <button class="chat-act-btn" onclick="document.getElementById('discOv').classList.add('show')" title="Șterge conversația">🗑️</button>
     </div>
     <div class="enc-bar">🔐 end-to-end encrypted · dispare la închidere</div>
     <div class="messages" id="messages"></div>
@@ -1276,15 +1278,14 @@ function unlock() {
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
-  // Daca era chat activ SI userul nu a dat intentionat back, redeschide-l
-  if (fbPeerId && fbChatRef && currentChatName && !window._userLeftChat) {
+  // Daca era chat activ, redeschide-l
+  if (fbPeerId && fbChatRef && currentChatName) {
     setTimeout(() => {
       ov.classList.remove('show');
       goToChat(fbPeerId, currentChatName);
     }, 1200);
     return;
   }
-  window._userLeftChat = false;
   // Afiseaza numele real in avatar
   const displayName = localStorage.getItem('tirea_display_name') || 'EU';
   const initials = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || 'EU';
@@ -1487,52 +1488,41 @@ function toggleReadReceipt() {
   });
 }
 
-function returnToHome() {
-  // Ascunde explicit toate ecranele cu display:none
-  ['chat-app','addfriend-app','qr-app','link-app','pin-app',
-   'p2p-app','secret-app','profil-app','setari-app',
-   'setup-app','name-setup'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('vis','show');
-    el.style.cssText = 'display:none !important';
-  });
-  document.getElementById('calc-app').style.cssText = 'display:none !important';
-  document.getElementById('p2p-bar').style.display = 'none';
-  document.getElementById('discOv').classList.remove('show');
-  document.getElementById('unlockOv').classList.remove('show');
-
-  // Forteaza tirea-app sa fie vizibil deasupra tuturor
-  const tirea = document.getElementById('tirea-app');
-  tirea.classList.add('vis');
-  tirea.style.cssText = 'display:flex;opacity:1;pointer-events:all;transform:translateY(0);z-index:50';
-
-  const sb = document.getElementById('sb');
-  sb.style.cssText = 'display:flex;z-index:100';
-  sb.className = 'status-bar sb-tirea';
-  navTo('chat');
-}
-
 function closeChat() {
-  // NU stergem Firebase, NU deconectam — doar ascundem vizual chat-ul
-  // Marcam ca userul a dat intentionat back
-  window._userLeftChat = true;
-  returnToHome();
+  // NU sterge Firebase — doar te intoarce la lista de conversatii
+  if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
+  if (fbChatRef) { try { fbChatRef.off('value'); } catch(e){} }
+  fbChatRef = null; fbPeerId = null;
+  _aesKeyCache = {};
+
+  // Curata ecranul
+  document.getElementById('messages').innerHTML = '';
+  const chatEl = document.getElementById('chat-app');
+  chatEl.classList.remove('vis');
+  chatEl.removeAttribute('style');
+
+  // Restaureaza Tirea
+  Array.from(document.querySelector('.screen').children).forEach(el => {
+    if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
+  });
+  document.getElementById('sb').removeAttribute('style');
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('tirea-app').classList.add('vis');
+  document.getElementById('calc-app').style.display = 'none';
+  document.getElementById('p2p-bar').style.display = 'none';
+  p2pClose();
 }
 
 function confirmClose() {
   if (currentChatName) delete chatHistory[currentChatName];
-  try {
-    if (window._currentChatPath) db.ref(window._currentChatPath).set(null);
-  } catch(e) {}
-  window._currentChatPath = null;
-  if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
-  if (fbChatRef) { try { fbChatRef.off('value'); } catch(e){} }
-  fbChatRef = null; fbPeerId = null; fbChatListener = null;
-  _aesKeyCache = {};
+  if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); }
+  if (fbPeerId && fbChatRef) fbChatRef.remove(); // sterge mesajele din Firebase
+  fbPeerId = null; fbChatRef = null; fbChatListener = null;
+  document.getElementById('discOv').classList.remove('show');
   document.getElementById('messages').innerHTML = '';
+  document.getElementById('chat-app').classList.remove('vis');
+  document.getElementById('p2p-bar').style.display = 'none';
   p2pClose();
-  returnToHome();
 }
 
 function showTyping() {
@@ -2332,23 +2322,15 @@ function goToChat(peerId, peerName) {
   fbPeerId = peerId;
   currentChatName = peerName;
 
-  // Ascunde ecranele care ar putea fi vizibile (fara display:none pe toti copiii)
-  ['tirea-app','addfriend-app','qr-app','link-app','pin-app',
-   'p2p-app','secret-app','profil-app','setari-app','setup-app','name-setup'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+  // Ascunde ORICE element din screen
+  const screen = document.querySelector('.screen');
+  Array.from(screen.children).forEach(el => {
+    el.style.display = 'none';
     el.classList.remove('vis','show');
-    el.removeAttribute('style');
   });
-  // Ascunde calculatorul
-  const calcEl = document.getElementById('calc-app');
-  calcEl.classList.remove('vis');
-  calcEl.removeAttribute('style');
-  calcEl.style.display = 'none';
 
   // Arata status bar si chat
   const sb = document.getElementById('sb');
-  sb.removeAttribute('style');
   sb.style.display = 'flex';
   sb.style.zIndex = '10000';
   sb.className = 'status-bar sb-tirea';
@@ -2377,8 +2359,34 @@ function goToChat(peerId, peerName) {
     seenKeys.add(snap.key);
     const m = snap.val();
     if (!m || m.uid === myUserId) return;
+    // Decripteaza folosind ID-ul expeditorului
     const text = await decMsg(m.enc, m.uid);
     _addFbMsg(text, false, m.ts);
+  });
+
+  // Cand celalalt iese, curatam si noi
+  let chatHadMessages = false;
+  const chRootRef = db.ref('chats/' + ch);
+  chRootRef.on('value', snap => {
+    if (snap.exists()) { chatHadMessages = true; return; }
+    if (!chatHadMessages) return;
+    if (fbPeerId !== peerId) return;
+    // Inchide chat pe al doilea telefon
+    try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
+    try { chRootRef.off('value'); } catch(e){}
+    fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
+    _aesKeyCache = {};
+    document.getElementById('messages').innerHTML = '';
+    const chatEl = document.getElementById('chat-app');
+    chatEl.classList.remove('vis');
+    chatEl.removeAttribute('style');
+    Array.from(document.querySelector('.screen').children).forEach(el => {
+      if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
+    });
+    document.getElementById('sb').removeAttribute('style');
+    document.getElementById('sb').className = 'status-bar sb-tirea';
+    document.getElementById('tirea-app').classList.add('vis');
+    document.getElementById('calc-app').style.display = 'none';
   });
 }
 
