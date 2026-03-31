@@ -1430,33 +1430,21 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Sterge din Firebase
-  try {
-    if (window._currentChatPath) {
-      db.ref(window._currentChatPath).set(null);
-    }
-  } catch(e) {}
+  // Sterge tot din Firebase
+  try { if (window._currentChatPath) db.ref(window._currentChatPath).set(null); } catch(e){}
   window._currentChatPath = null;
   if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
   fbChatRef = null; fbPeerId = null;
   document.getElementById('messages').innerHTML = '';
 
-  // Restaureaza ecranele
-  document.getElementById('chat-app').style.display = '';
-  document.getElementById('chat-app').classList.remove('vis');
-  document.getElementById('calc-app').style.display = '';
-  document.getElementById('sb').style.display = '';
-
-  // Arata tirea daca e logat, altfel calculatorul
-  if (storedHash) {
-    document.getElementById('tirea-app').style.display = '';
-    document.getElementById('tirea-app').classList.add('vis');
-    document.getElementById('calc-app').style.display = 'none';
-    document.getElementById('sb').className = 'status-bar sb-tirea';
-  } else {
-    document.getElementById('calc-app').style.display = 'flex';
-    document.getElementById('sb').className = 'status-bar sb-dark';
-  }
+  // Restaureaza toate ecranele la normal
+  Array.from(document.querySelector('.screen').children).forEach(el => {
+    el.style.display = '';
+    el.classList.remove('vis','show');
+  });
+  document.getElementById('sb').style.cssText = '';
+  document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('tirea-app').classList.add('vis');
   document.getElementById('p2p-bar').style.display = 'none';
   p2pClose();
 }
@@ -2067,6 +2055,8 @@ function addContact() {
 }
 
 function addContactToList(name, peerId) {
+  // Nu adauga pe sine insusi
+  if (peerId === myUserId) return;
   // Verifica sa nu existe deja
   const existing = document.querySelector('[data-peerid="'+peerId+'"]');
   if (existing) return;
@@ -2226,6 +2216,10 @@ function startListening() {
     const sig = snap.val();
     if (Date.now() - sig.ts > 60000) return;
     db.ref('signals/' + myUserId).remove();
+    // Daca suntem deja in chat cu aceasta persoana, ignoram semnalul
+    if (fbPeerId === sig.from) return;
+    // Daca suntem deja in chat cu altcineva, ignoram
+    if (fbPeerId) return;
     showIncomingSignal(sig.from, sig.fromName || 'Prieten');
   });
 }
@@ -2234,50 +2228,31 @@ function showIncomingSignal(fromId, fromName) {
   const existing = document.getElementById('incomingSignal');
   if (existing) existing.remove();
 
-  // Salveaza datele global ca sa le acceseze butoanele
-  window._pendingSignalId = fromId;
-  window._pendingSignalName = fromName;
-
   const initials = fromName.substr(0,2).toUpperCase();
   const el = document.createElement('div');
   el.id = 'incomingSignal';
-  el.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:999;padding:32px';
-  el.innerHTML = 
-      '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ffffff,#cccccc);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#1a1a1a">' + initials + '</div>'
-    + '<div style="font-size:22px;font-weight:700;color:#ffffff;text-align:center">' + esc(fromName) + '</div>'
-    + '<div style="font-size:14px;color:#aaaaaa;text-align:center;line-height:1.6">vrea să înceapă un chat<br>criptat cu tine 🔐</div>'
-    + '<div style="display:flex;gap:16px;margin-top:12px">'
-    + '<button id="rejectBtn" style="padding:16px 32px;background:#2a2a2a;border:1px solid #555;color:#ffffff;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer">✗ Refuză</button>'
-    + '<button id="acceptBtn" style="padding:16px 32px;background:#4caf50;border:none;color:#ffffff;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer">✓ Acceptă</button>'
-    + '</div>'
-    + '<div style="font-size:10px;color:#444;font-family:monospace">AES-256-GCM · end-to-end encrypted</div>';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px';
+  el.innerHTML =
+      '<div style="width:80px;height:80px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#000">' + initials + '</div>'
+    + '<div style="font-size:22px;font-weight:700;color:#fff">' + esc(fromName) + '</div>'
+    + '<div style="font-size:14px;color:#aaa;text-align:center">vrea să înceapă un chat criptat</div>'
+    + '<div style="display:flex;gap:16px">'
+    + '<button id="sig_reject" style="padding:14px 28px;background:#333;border:1px solid #555;color:#fff;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer">✗ Refuză</button>'
+    + '<button id="sig_accept" style="padding:14px 28px;background:#4caf50;border:none;color:#fff;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer">✓ Acceptă</button>'
+    + '</div>';
   document.querySelector('.screen').appendChild(el);
 
-  document.getElementById('acceptBtn').onclick = function() {
+  document.getElementById('sig_accept').onclick = function() {
     el.remove();
-    addContactToList(window._pendingSignalName, window._pendingSignalId);
-    openFbChat(window._pendingSignalId, window._pendingSignalName);
+    addContactToList(fromName, fromId);
+    goToChat(fromId, fromName);
   };
-  document.getElementById('rejectBtn').onclick = function() {
-    el.remove();
-  };
-
+  document.getElementById('sig_reject').onclick = function() { el.remove(); };
   setTimeout(() => { if(el.parentNode) el.remove(); }, 30000);
 }
 
-function rejectSignal() {
-  const el = document.getElementById('incomingSignal');
-  if (el) el.remove();
-}
-
-function acceptSignal(fromId, fromName) {
-  const el = document.getElementById('incomingSignal');
-  if (el) el.remove();
-  addContactToList(fromName, fromId);
-  openFbChat(fromId, fromName);
-}
-
-function openFbChat(peerId, peerName) {
+// Functie simpla care deschide chatul direct
+function goToChat(peerId, peerName) {
   // Opreste listener vechi
   if (fbChatRef && fbChatListener) {
     try { fbChatRef.off('child_added', fbChatListener); } catch(e){}
@@ -2287,19 +2262,21 @@ function openFbChat(peerId, peerName) {
   fbPeerId = peerId;
   currentChatName = peerName;
 
-  // Reset stiluri inline pe toate ecranele
-  document.querySelectorAll('.screen > div').forEach(el => {
-    el.removeAttribute('style');
+  // Ascunde ORICE element din screen
+  const screen = document.querySelector('.screen');
+  Array.from(screen.children).forEach(el => {
+    el.style.display = 'none';
     el.classList.remove('vis','show');
   });
 
-  // Arata DOAR chat-ul — fortat cu style inline ca sa bata CSS-ul
-  const chat = document.getElementById('chat-app');
-  chat.style.cssText = 'position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;opacity:1;transform:translateX(0);pointer-events:all;z-index:9999;border-radius:34px';
+  // Arata status bar si chat
+  const sb = document.getElementById('sb');
+  sb.style.display = 'flex';
+  sb.style.zIndex = '10000';
+  sb.className = 'status-bar sb-tirea';
 
-  // Status bar
-  document.getElementById('sb').className = 'status-bar sb-tirea';
-  document.getElementById('sb').style.zIndex = '10000';
+  const chat = document.getElementById('chat-app');
+  chat.style.cssText = 'position:absolute;inset:0;background:#2a2a2a;display:flex;flex-direction:column;z-index:9000;border-radius:34px;opacity:1;pointer-events:all;transform:none';
 
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
@@ -2307,7 +2284,8 @@ function openFbChat(peerId, peerName) {
   document.getElementById('msgInput').value = '';
   document.getElementById('discOv').classList.remove('show');
   msgCount = 0;
-  addSys('🔐 Chat criptat · se șterge la închidere');
+
+  addSys('🔐 Chat criptat AES-256 · se șterge la închidere');
 
   const ch = channel(myUserId, peerId);
   window._currentChatPath = 'chats/' + ch;
@@ -2323,18 +2301,27 @@ function openFbChat(peerId, peerName) {
     _addFbMsg(text, false, m.ts);
   });
 
+  // Cand celalalt iese, curatum si noi
   db.ref('chats/' + ch).on('value', snap => {
-    if (!snap.exists() && fbPeerId) {
+    if (!snap.exists() && fbPeerId === peerId) {
       try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
       fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
       document.getElementById('messages').innerHTML = '';
-      document.getElementById('chat-app').removeAttribute('style');
-      document.getElementById('tirea-app').removeAttribute('style');
+      // Restaureaza ecranele
+      Array.from(document.querySelector('.screen').children).forEach(el => {
+        el.style.display = '';
+        el.classList.remove('vis');
+      });
       document.getElementById('tirea-app').classList.add('vis');
-      document.getElementById('sb').removeAttribute('style');
+      document.getElementById('sb').style.zIndex = '';
     }
   });
 }
+
+function openFbChat(peerId, peerName) {
+  goToChat(peerId, peerName);
+}
+
 
 function _addFbMsg(text, isMe, ts) {
   const msgs = document.getElementById('messages');
