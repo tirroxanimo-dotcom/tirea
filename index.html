@@ -976,8 +976,12 @@ document.addEventListener('DOMContentLoaded', scalePhone);
     var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
     lx=a.x; ly=a.y; lz=a.z;
     if (d > THRESH) {
-      var t = document.getElementById('tirea-app');
-      if (t && t.classList.contains('vis')) hideTirea();
+      var inTirea = document.getElementById('tirea-app').classList.contains('vis');
+      var inChat = document.getElementById('chat-app').classList.contains('vis');
+      if (inTirea || inChat) {
+        if (inChat) closeChat();
+        hideTirea();
+      }
     }
   });
 })();
@@ -1426,14 +1430,14 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Sterge tot chatul din Firebase cu calea exacta
-  if (window._currentChatPath) {
-    db.ref(window._currentChatPath).remove()
-      .then(() => console.log('Chat sters din Firebase'))
-      .catch(e => console.error('Eroare stergere:', e));
-    window._currentChatPath = null;
-  }
-  if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); fbChatListener = null; }
+  // Sterge din Firebase
+  try {
+    if (window._currentChatPath) {
+      db.ref(window._currentChatPath).set(null);
+    }
+  } catch(e) {}
+  window._currentChatPath = null;
+  if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
   fbChatRef = null; fbPeerId = null;
   document.getElementById('messages').innerHTML = '';
   document.getElementById('chat-app').classList.remove('vis');
@@ -2302,13 +2306,15 @@ function openFbChat(peerId, peerName) {
     _addFbMsg(text, false, m.ts);
   });
 
-  // Cand celalalt iese, mesajele dispar si la noi automat
+  // Cand celalalt iese, curata si la noi imediat
   db.ref('chats/' + ch).on('value', snap => {
-    if (!snap.exists()) {
-      if (document.getElementById('chat-app').classList.contains('vis')) {
-        document.getElementById('messages').innerHTML = '';
-        addSys('💨 Conversația a fost închisă de celălalt');
-      }
+    if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
+      if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
+      fbChatRef = null; fbPeerId = null;
+      window._currentChatPath = null;
+      document.getElementById('messages').innerHTML = '';
+      document.getElementById('chat-app').classList.remove('vis');
+      document.getElementById('tirea-app').classList.add('vis');
     }
   });
 }
