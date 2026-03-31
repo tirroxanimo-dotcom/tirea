@@ -1426,10 +1426,14 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Sterge mesajele din Firebase la inchidere
+  // Sterge tot nodul chat din Firebase (chats/XX) — amandoi vor vedea gol
+  if (fbPeerId) {
+    const ch = channel(myUserId, fbPeerId);
+    db.ref('chats/' + ch).remove();
+  }
   if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); fbChatListener = null; }
-  if (fbPeerId && fbChatRef) { fbChatRef.remove(); }
-  fbPeerId = null; fbChatRef = null;
+  if (fbChatRef) { fbChatRef.off('value'); }
+  fbChatRef = null; fbPeerId = null;
   document.getElementById('messages').innerHTML = '';
   document.getElementById('chat-app').classList.remove('vis');
   document.getElementById('tirea-app').classList.add('vis');
@@ -2289,11 +2293,12 @@ function openFbChat(peerId, peerName) {
     _addFbMsg(text, false, m.ts);
   });
 
-  // Cand celalalt sterge conversatia, curata si la noi
-  fbChatRef.on('value', snap => {
+  // Cand celalalt iese din chat, curata automat si la noi
+  const chatRootRef = db.ref('chats/' + ch);
+  chatRootRef.on('value', snap => {
     if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
       document.getElementById('messages').innerHTML = '';
-      addSys('💨 Conversația a fost ștearsă');
+      addSys('💨 Conversația a fost închisă');
     }
   });
 }
