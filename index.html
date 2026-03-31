@@ -1491,7 +1491,13 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // NU sterge Firebase — celalt telefon ramane in chat
+  // Sterge tot din Firebase ca si cum ai apasa cos
+  try {
+    if (window._currentChatPath) {
+      db.ref(window._currentChatPath).set(null);
+    }
+  } catch(e) {}
+  window._currentChatPath = null;
   if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
   if (fbChatRef) { try { fbChatRef.off('value'); } catch(e){} }
   fbChatRef = null; fbPeerId = null;
