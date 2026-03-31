@@ -2284,10 +2284,17 @@ function openFbChat(peerId, peerName) {
     const m = snap.val();
     if (!m) return;
     const isMe = m.uid === myUserId;
-    // Mesajele mele sunt deja afisate local la trimitere
     if (isMe) return;
     const text = await decMsg(m.enc, m.uid);
     _addFbMsg(text, false, m.ts);
+  });
+
+  // Cand celalalt sterge conversatia, curata si la noi
+  fbChatRef.on('value', snap => {
+    if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
+      document.getElementById('messages').innerHTML = '';
+      addSys('💨 Conversația a fost ștearsă');
+    }
   });
 }
 
