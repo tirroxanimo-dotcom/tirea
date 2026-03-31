@@ -849,10 +849,10 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <input type="file" id="qrCameraInput" accept="image/*" capture="environment" style="display:none" onchange="readQRFromImage(this)">
-      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează QR</button>
+      <input type="file" id="qrCameraInput" accept="image/*" style="display:none" onchange="readQRFromImage(this)">
+      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează / Galerie</button>
       <div class="qr-scan-result" id="qrScanResult"></div>
-      <div class="qr-scan-result" id="qrScanResult"></div>
+      <div class="qr-scan-result" id="qrScanResult2"></div>
     </div>
   </div>
 
