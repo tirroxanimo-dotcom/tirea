@@ -849,10 +849,14 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <input type="file" id="qrCameraInput" accept="image/*" style="display:none" onchange="readQRFromImage(this)">
-      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează / Galerie</button>
+      <div id="qrScanWrap" style="display:none;width:220px;height:220px;position:relative;border-radius:16px;overflow:hidden;background:#000">
+        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline autoplay muted></video>
+        <canvas id="qrCanvas" style="display:none"></canvas>
+        <div style="position:absolute;inset:0;border:3px solid #4caf50;border-radius:16px;pointer-events:none"></div>
+        <button onclick="stopQRScan()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;font-size:18px;border-radius:50%;width:32px;height:32px;cursor:pointer">✕</button>
+      </div>
+      <button class="qr-scan-btn" id="qrScanBtn" onclick="startQRScan()">📷 Scanează QR live</button>
       <div class="qr-scan-result" id="qrScanResult"></div>
-      <div class="qr-scan-result" id="qrScanResult2"></div>
     </div>
   </div>
 
@@ -1744,7 +1748,66 @@ function drawQR() {
   }
 }
 
-function simulateScan() { document.getElementById('qrCameraInput').click(); }
+let qrScanInterval = null;
+
+function startQRScan() {
+  const wrap = document.getElementById('qrScanWrap');
+  const video = document.getElementById('qrVideo');
+  const btn = document.getElementById('qrScanBtn');
+  const res = document.getElementById('qrScanResult');
+  res.textContent = '';
+  wrap.style.display = 'block';
+  btn.style.display = 'none';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      video.srcObject = stream;
+      video.play();
+      qrScanInterval = setInterval(() => tickQRScan(stream), 300);
+    })
+    .catch(() => {
+      res.textContent = '✗ Camera indisponibilă';
+      res.style.color = 'var(--t-red)';
+      wrap.style.display = 'none';
+      btn.style.display = 'block';
+    });
+}
+
+function tickQRScan(stream) {
+  const video = document.getElementById('qrVideo');
+  const canvas = document.getElementById('qrCanvas');
+  if (!video.videoWidth) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+  if (typeof jsQR === 'undefined') return;
+  const code = jsQR(imageData.data, imageData.width, imageData.height);
+  if (code) {
+    stopQRScan();
+    const parts = code.data.split('|');
+    const peerId = parts[0];
+    const peerName = parts[1] || 'Prieten';
+    const res = document.getElementById('qrScanResult');
+    res.textContent = '✓ ' + peerName + ' — se conectează...';
+    res.style.color = 'var(--t-green)';
+    const myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
+    db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
+    addContactToList(peerName, peerId);
+    setTimeout(() => {
+      closePage('qr-app');
+      closePage('addfriend-app');
+      openFbChat(peerId, peerName);
+    }, 800);
+  }
+}
+
+function stopQRScan() {
+  if (qrScanInterval) { clearInterval(qrScanInterval); qrScanInterval = null; }
+  const video = document.getElementById('qrVideo');
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  document.getElementById('qrScanWrap').style.display = 'none';
+  document.getElementById('qrScanBtn').style.display = 'block';
+}
 
 function readQRFromImage(input) {
   const file = input.files[0];
