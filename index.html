@@ -576,7 +576,6 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="t-brand-ver">v3.0 · secure</div>
       </div>
       <div class="t-btn-row">
-        <button class="hide-btn" onclick="shakeExit()">📳 Shake</button>
         <button class="hide-btn" onclick="hideTirea()">👁 Ascunde</button>
         <button class="panic-btn" onclick="panicMode()">🚨 Panic</button>
       </div>
@@ -961,51 +960,26 @@ document.addEventListener('DOMContentLoaded', scalePhone);
 
 // SHAKE TO HIDE — scutura sa ascunda Tirea
 (function() {
-  var THRESH = 18, last = 0, lx = null, ly = null, lz = null;
-  var shakeCount = 0, shakeTimer = null;
-  var motionGranted = false;
-
-  function startListening() {
-    motionGranted = true;
-    window.addEventListener('devicemotion', onMotion);
-  }
-
+  var THRESH = 20, last = 0, lx = null, ly = null, lz = null;
   function req() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      // iOS 13+ — cere permisiune explicit
-      DeviceMotionEvent.requestPermission().then(function(state) {
-        if (state === 'granted') startListening();
-      }).catch(function() {});
-    } else {
-      // Android / desktop — functioneaza direct
-      startListening();
+      DeviceMotionEvent.requestPermission().catch(function(){});
     }
   }
-
-  // Primul tap porneste senzorul
   document.addEventListener('DOMContentLoaded', function() {
-    document.body.addEventListener('touchstart', req, { once: true });
     document.body.addEventListener('click', req, { once: true });
   });
-
-  function onMotion(e) {
-    var a = e.acceleration || e.accelerationIncludingGravity;
-    if (!a) return;
-    var now = Date.now(); if (now - last < 60) return; last = now;
-    if (lx === null) { lx=a.x||0; ly=a.y||0; lz=a.z||0; return; }
-    var d = Math.abs((a.x||0)-lx) + Math.abs((a.y||0)-ly) + Math.abs((a.z||0)-lz);
-    lx=a.x||0; ly=a.y||0; lz=a.z||0;
+  window.addEventListener('devicemotion', function(e) {
+    var a = e.accelerationIncludingGravity; if (!a) return;
+    var now = Date.now(); if (now - last < 80) return; last = now;
+    if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
+    var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
+    lx=a.x; ly=a.y; lz=a.z;
     if (d > THRESH) {
-      shakeCount++;
-      if (shakeTimer) clearTimeout(shakeTimer);
-      shakeTimer = setTimeout(function(){ shakeCount = 0; }, 800);
-      // 2 shake-uri in 800ms = actiune
-      if (shakeCount >= 2) {
-        shakeCount = 0;
-        shakeExit();
-      }
+      // Scutura = iesi complet si arata calculatorul
+      shakeExit();
     }
-  }
+  });
 })();
 
 let storedHash = localStorage.getItem('tirea_hash') || null;
@@ -1494,19 +1468,28 @@ function closeChat() {
 
   // Curata ecranul
   document.getElementById('messages').innerHTML = '';
-  const chatEl = document.getElementById('chat-app');
-  chatEl.classList.remove('vis');
-  chatEl.removeAttribute('style');
 
-  // Restaureaza Tirea
-  Array.from(document.querySelector('.screen').children).forEach(el => {
-    if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
+  // Reseteaza TOATE paginile — sterge style inline si clasa vis/show
+  const allPages = ['chat-app','tirea-app','calc-app','setup-app','name-setup',
+    'profil-app','setari-app','p2p-app','secret-app','addfriend-app',
+    'qr-app','link-app','pin-app'];
+  allPages.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('vis','show');
+    el.removeAttribute('style');
   });
+
+  // Ascunde si overlay-uri
+  document.getElementById('p2p-bar').style.display = 'none';
+  const discOv = document.getElementById('discOv');
+  if (discOv) { discOv.classList.remove('show'); discOv.style.display = 'none'; }
+
+  // Arata DOAR pagina principala Tirea
   document.getElementById('sb').removeAttribute('style');
   document.getElementById('sb').className = 'status-bar sb-tirea';
   document.getElementById('tirea-app').classList.add('vis');
   document.getElementById('calc-app').style.display = 'none';
-  document.getElementById('p2p-bar').style.display = 'none';
   p2pClose();
 }
 
