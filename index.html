@@ -1809,7 +1809,8 @@ function generateLink() {
   activeLink = token;
   activeLinkExpiry = Date.now() + 24*60*60*1000;
   const displayName = localStorage.getItem('tirea_display_name') || 'Utilizator';
-  const link = 'tirea://invite/' + myUserId + '/' + encodeURIComponent(displayName) + '/' + token;
+  const base = location.href.split('?')[0].split('#')[0];
+  const link = base + '?inv=' + myUserId + '&n=' + encodeURIComponent(displayName) + '&t=' + token;
   document.getElementById('linkBox').textContent = link;
   document.getElementById('linkExpire').textContent = 'Expiră în 24 ore';
   document.getElementById('linkInput').value = '';
@@ -1826,25 +1827,42 @@ function copyLink() {
 
 function shareLink() {
   const txt = document.getElementById('linkBox').textContent;
-  if (navigator.share) navigator.share({ title: 'Invitație Tirea', text: 'Hai pe Tirea! ' + txt });
-  else copyLink();
+  if (navigator.share) {
+    navigator.share({ title: 'Invitație T.irea', text: '🔐 Te invit pe T.irea — chat criptat:\n' + txt });
+  } else copyLink();
 }
 
 function linkTyped(el) {
   const v = el.value.trim();
-  document.getElementById('linkAcceptBtn').disabled = v.length < 10;
+  document.getElementById('linkAcceptBtn').disabled = !(v.includes('inv=') || v.includes('tirea://'));
 }
 
 function acceptLink() {
   const v = document.getElementById('linkInput').value.trim();
-  if (!v.includes('tirea://invite/')) {
+  let peerId = '', peerName = 'Prieten';
+  // format nou: ?inv=ID&n=Nume&t=token
+  if (v.includes('inv=')) {
+    try {
+      const url = new URL(v);
+      peerId = url.searchParams.get('inv') || '';
+      peerName = url.searchParams.get('n') ? decodeURIComponent(url.searchParams.get('n')) : 'Prieten';
+    } catch(e) {
+      const m = v.match(/[?&]inv=([^&]+)/);
+      if (m) peerId = m[1];
+      const mn = v.match(/[?&]n=([^&]+)/);
+      if (mn) peerName = decodeURIComponent(mn[1]);
+    }
+  } else if (v.includes('tirea://invite/')) {
+    // format vechi pentru compatibilitate
+    const parts = v.split('/');
+    peerId = parts[3] || '';
+    peerName = parts[4] ? decodeURIComponent(parts[4]) : 'Prieten';
+  }
+  if (!peerId) {
     document.getElementById('linkStatus').textContent = '✗ Link invalid';
     document.getElementById('linkStatus').style.color = 'var(--t-red)';
     return;
   }
-  const parts = v.split('/');
-  const peerId = parts[3] || '';
-  const peerName = parts[4] ? decodeURIComponent(parts[4]) : 'Prieten';
   document.getElementById('linkStatus').textContent = '✓ Link valid!';
   document.getElementById('linkStatus').style.color = 'var(--t-green)';
   pendingFriend = { name: peerName, id: peerId };
