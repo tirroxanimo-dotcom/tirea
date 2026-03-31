@@ -2236,14 +2236,16 @@ function showIncomingSignal(fromId, fromName) {
 
   document.getElementById('acceptBtn').onclick = function() {
     el.remove();
-    // Inchide TOATE ecranele
-    ['qr-app','addfriend-app','link-app','pin-app','profil-app','setari-app','p2p-app','secret-app'].forEach(id => {
-      const e = document.getElementById(id);
-      if (e) e.classList.remove('vis');
+    // Inchide ABSOLUT TOATE ecranele posibile
+    document.querySelectorAll('[id$="-app"]').forEach(e => {
+      e.classList.remove('vis');
+      if (e.id === 'calc-app') e.style.display = 'none';
     });
-    document.getElementById('tirea-app').classList.remove('vis');
-    addContactToList(window._pendingSignalName, window._pendingSignalId);
-    openFbChat(window._pendingSignalId, window._pendingSignalName);
+    // Mica pauza ca sa se proceseze DOM-ul
+    setTimeout(function() {
+      addContactToList(window._pendingSignalName, window._pendingSignalId);
+      openFbChat(window._pendingSignalId, window._pendingSignalName);
+    }, 50);
   };
   document.getElementById('rejectBtn').onclick = function() {
     el.remove();
@@ -2280,6 +2282,8 @@ function openFbChat(peerId, peerName) {
     const el = document.getElementById(id);
     if (el) el.classList.remove('vis');
   });
+  // Ascunde calculatorul
+  document.getElementById('calc-app').style.display = 'none';
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
