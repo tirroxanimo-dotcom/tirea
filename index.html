@@ -1243,6 +1243,14 @@ function unlock() {
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
+  // Daca era chat activ, redeschide-l
+  if (fbPeerId && fbChatRef && currentChatName) {
+    setTimeout(() => {
+      ov.classList.remove('show');
+      goToChat(fbPeerId, currentChatName);
+    }, 1200);
+    return;
+  }
   // Afiseaza numele real in avatar
   const displayName = localStorage.getItem('tirea_display_name') || 'EU';
   const initials = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || 'EU';
@@ -1268,35 +1276,31 @@ function unlock() {
 }
 
 function shakeExit() {
-  // Sterge Firebase daca e chat deschis
-  try {
-    if (window._currentChatPath) {
-      db.ref(window._currentChatPath).set(null);
-      window._currentChatPath = null;
-    }
-  } catch(e) {}
-  if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
-  fbChatRef = null; fbPeerId = null;
-  _aesKeyCache = {};
+  // NU sterge Firebase, NU deconecteaza — doar ascunde interfata
 
-  // Ascunde TOT si arata doar calculatorul
+  // Ascunde TOT
   var screen = document.querySelector('.screen');
   Array.from(screen.children).forEach(function(el) {
-    el.style.display = 'none';
     el.classList.remove('vis','show');
     el.removeAttribute('style');
   });
-  document.getElementById('messages').innerHTML = '';
+
+  // Arata DOAR calculatorul
   document.getElementById('calc-app').style.display = 'flex';
   document.getElementById('sb').className = 'status-bar sb-dark';
   document.getElementById('sb').style.display = 'flex';
 }
 
 function hideTirea() {
-  closeAllPages();
-  document.getElementById('tirea-app').classList.remove('vis');
+  // Ascunde tot, arata calculatorul — NU deconecteaza
+  var screen = document.querySelector('.screen');
+  Array.from(screen.children).forEach(function(el) {
+    el.classList.remove('vis','show');
+    el.removeAttribute('style');
+  });
   document.getElementById('calc-app').style.display = 'flex';
   document.getElementById('sb').className = 'status-bar sb-dark';
+  document.getElementById('sb').style.display = 'flex';
 }
 
 function closeAllPages() {
