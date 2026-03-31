@@ -1620,10 +1620,8 @@ function sendMsg() {
 }
 
 async function sendFbMsgWithPreview(text) {
-  // Arata mesajul normal + versiunea criptata
+  // Trimite in Firebase — listener-ul il va afisa, fara duplicate
   const encrypted = await encMsg(text, fbPeerId);
-  addMsgWithEnc(text, encrypted, true);
-  // Trimite in Firebase
   fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
 }
 
@@ -2215,6 +2213,12 @@ function showIncomingSignal(fromId, fromName) {
 
   document.getElementById('acceptBtn').onclick = function() {
     el.remove();
+    // Inchide TOATE ecranele
+    ['qr-app','addfriend-app','link-app','pin-app','profil-app','setari-app','p2p-app','secret-app'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.classList.remove('vis');
+    });
+    document.getElementById('tirea-app').classList.remove('vis');
     addContactToList(window._pendingSignalName, window._pendingSignalId);
     openFbChat(window._pendingSignalId, window._pendingSignalName);
   };
@@ -2238,9 +2242,21 @@ function acceptSignal(fromId, fromName) {
 }
 
 function openFbChat(peerId, peerName) {
+  // Opreste orice listener vechi
+  if (fbChatRef && fbChatListener) {
+    fbChatRef.off('child_added', fbChatListener);
+    fbChatListener = null;
+    fbChatRef = null;
+  }
   fbPeerId = peerId;
-  if (fbChatRef && fbChatListener) fbChatRef.off('child_added', fbChatListener);
   currentChatName = peerName;
+
+  // Ascunde TOATE ecranele si arata chat-ul
+  document.getElementById('tirea-app').classList.remove('vis');
+  ['addfriend-app','qr-app','link-app','pin-app','profil-app','setari-app','p2p-app','secret-app'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('vis');
+  });
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
@@ -2248,12 +2264,18 @@ function openFbChat(peerId, peerName) {
   document.getElementById('discOv').classList.remove('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
   document.getElementById('chat-app').classList.add('vis');
-  document.getElementById('calc-app').style.display = 'none';
   msgCount = 0;
-  addSys('⚡ Chat live Firebase · criptat · se șterge la închidere');
+
+  addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
+
   const ch = channel(myUserId, peerId);
   fbChatRef = db.ref('chats/' + ch + '/msgs');
-  fbChatListener = fbChatRef.limitToLast(100).on('child_added', async snap => {
+  const seenKeys = new Set();
+  // Ia doar mesajele de ACUM incolo, nu cele vechi
+  const startTs = Date.now();
+  fbChatListener = fbChatRef.orderByChild('ts').startAt(startTs).on('child_added', async snap => {
+    if (seenKeys.has(snap.key)) return;
+    seenKeys.add(snap.key);
     const m = snap.val();
     if (!m) return;
     const isMe = m.uid === myUserId;
