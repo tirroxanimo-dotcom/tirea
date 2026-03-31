@@ -1620,7 +1620,9 @@ function sendMsg() {
 }
 
 async function sendFbMsgWithPreview(text) {
-  // Trimite in Firebase — listener-ul il va afisa, fara duplicate
+  // Afiseaza imediat local
+  addMsg(text, true);
+  // Trimite in Firebase — listener ignora mesajele proprii
   const encrypted = await encMsg(text, fbPeerId);
   fbChatRef.push({ uid: myUserId, enc: encrypted, ts: Date.now() });
 }
@@ -2271,16 +2273,16 @@ function openFbChat(peerId, peerName) {
   const ch = channel(myUserId, peerId);
   fbChatRef = db.ref('chats/' + ch + '/msgs');
   const seenKeys = new Set();
-  // Ia doar mesajele de ACUM incolo, nu cele vechi
-  const startTs = Date.now();
-  fbChatListener = fbChatRef.orderByChild('ts').startAt(startTs).on('child_added', async snap => {
+  fbChatListener = fbChatRef.limitToLast(50).on('child_added', async snap => {
     if (seenKeys.has(snap.key)) return;
     seenKeys.add(snap.key);
     const m = snap.val();
     if (!m) return;
     const isMe = m.uid === myUserId;
-    const text = await decMsg(m.enc, isMe ? fbPeerId : m.uid);
-    _addFbMsg(text, isMe, m.ts);
+    // Mesajele mele sunt deja afisate local la trimitere
+    if (isMe) return;
+    const text = await decMsg(m.enc, m.uid);
+    _addFbMsg(text, false, m.ts);
   });
 }
 
