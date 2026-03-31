@@ -1277,18 +1277,17 @@ function unlock() {
 
 function shakeExit() {
   // NU sterge Firebase, NU deconecteaza — doar ascunde interfata
-
-  // Ascunde TOT
   var screen = document.querySelector('.screen');
   Array.from(screen.children).forEach(function(el) {
     el.classList.remove('vis','show');
-    el.removeAttribute('style');
+    // Reseteaza orice style inline
+    el.style.cssText = 'display:none';
   });
 
-  // Arata DOAR calculatorul
-  document.getElementById('calc-app').style.display = 'flex';
+  // Arata DOAR calculatorul si status bar
+  document.getElementById('calc-app').style.cssText = 'display:flex;position:absolute;inset:0;z-index:1';
+  document.getElementById('sb').style.cssText = 'display:flex;z-index:100';
   document.getElementById('sb').className = 'status-bar sb-dark';
-  document.getElementById('sb').style.display = 'flex';
 }
 
 function hideTirea() {
