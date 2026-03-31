@@ -2255,50 +2255,8 @@ function showIncomingSignal(fromId, fromName) {
 
   document.getElementById('acceptBtn').onclick = function() {
     el.remove();
-    var pid = window._pendingSignalId;
-    var pname = window._pendingSignalName;
-    // Ascunde tot
-    document.querySelectorAll('[id$="-app"]').forEach(function(e) {
-      e.classList.remove('vis');
-      e.style.display = '';
-    });
-    document.getElementById('calc-app').style.display = 'none';
-    // Seteaza chat direct
-    fbPeerId = pid;
-    currentChatName = pname;
-    document.getElementById('chatName').textContent = pname;
-    document.getElementById('chatAv').textContent = pname.substr(0,2).toUpperCase();
-    document.getElementById('messages').innerHTML = '';
-    document.getElementById('msgInput').value = '';
-    document.getElementById('discOv').classList.remove('show');
-    document.getElementById('sb').className = 'status-bar sb-tirea';
-    document.getElementById('chat-app').style.display = 'flex';
-    document.getElementById('chat-app').classList.add('vis');
-    addContactToList(pname, pid);
-    // Porneste listener Firebase
-    if (fbChatRef && fbChatListener) { try{fbChatRef.off('child_added', fbChatListener);}catch(e){} fbChatListener = null; fbChatRef = null; }
-    var ch = [myUserId, pid].sort().join('__');
-    window._currentChatPath = 'chats/' + ch;
-    fbChatRef = db.ref('chats/' + ch + '/msgs');
-    var seenKeys = new Set();
-    fbChatListener = fbChatRef.limitToLast(50).on('child_added', async function(snap) {
-      if (seenKeys.has(snap.key)) return;
-      seenKeys.add(snap.key);
-      var m = snap.val();
-      if (!m || m.uid === myUserId) return;
-      var text = await decMsg(m.enc, m.uid);
-      _addFbMsg(text, false, m.ts);
-    });
-    db.ref('chats/' + ch).on('value', function(snap) {
-      if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
-        if (fbChatRef && fbChatListener) { try{fbChatRef.off('child_added', fbChatListener);}catch(e){} fbChatListener = null; fbChatRef = null; }
-        fbPeerId = null; window._currentChatPath = null;
-        document.getElementById('messages').innerHTML = '';
-        document.getElementById('chat-app').classList.remove('vis');
-        document.getElementById('tirea-app').classList.add('vis');
-      }
-    });
-    addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
+    addContactToList(window._pendingSignalName, window._pendingSignalId);
+    openFbChat(window._pendingSignalId, window._pendingSignalName);
   };
   document.getElementById('rejectBtn').onclick = function() {
     el.remove();
@@ -2320,64 +2278,60 @@ function acceptSignal(fromId, fromName) {
 }
 
 function openFbChat(peerId, peerName) {
-  // Opreste orice listener vechi
+  // Opreste listener vechi
   if (fbChatRef && fbChatListener) {
-    fbChatRef.off('child_added', fbChatListener);
+    try { fbChatRef.off('child_added', fbChatListener); } catch(e){}
     fbChatListener = null;
     fbChatRef = null;
   }
   fbPeerId = peerId;
   currentChatName = peerName;
 
-  // Ascunde ABSOLUT TOT
+  // Reset stiluri inline pe toate ecranele
   document.querySelectorAll('.screen > div').forEach(el => {
-    el.style.display = 'none';
-    el.classList.remove('vis', 'show');
+    el.removeAttribute('style');
+    el.classList.remove('vis','show');
   });
 
-  // Arata DOAR chat-ul
-  const chatEl = document.getElementById('chat-app');
-  chatEl.style.display = 'flex';
-  chatEl.classList.add('vis');
-  chatEl.style.opacity = '1';
-  chatEl.style.transform = 'translateX(0)';
-  chatEl.style.pointerEvents = 'all';
+  // Arata DOAR chat-ul — fortat cu style inline ca sa bata CSS-ul
+  const chat = document.getElementById('chat-app');
+  chat.style.cssText = 'position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;opacity:1;transform:translateX(0);pointer-events:all;z-index:9999;border-radius:34px';
 
-  document.getElementById('sb').style.display = 'flex';
+  // Status bar
   document.getElementById('sb').className = 'status-bar sb-tirea';
+  document.getElementById('sb').style.zIndex = '10000';
+
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('msgInput').value = '';
   document.getElementById('discOv').classList.remove('show');
   msgCount = 0;
-
-  addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
+  addSys('🔐 Chat criptat · se șterge la închidere');
 
   const ch = channel(myUserId, peerId);
   window._currentChatPath = 'chats/' + ch;
   fbChatRef = db.ref('chats/' + ch + '/msgs');
   const seenKeys = new Set();
+
   fbChatListener = fbChatRef.limitToLast(50).on('child_added', async snap => {
     if (seenKeys.has(snap.key)) return;
     seenKeys.add(snap.key);
     const m = snap.val();
-    if (!m) return;
-    const isMe = m.uid === myUserId;
-    if (isMe) return;
+    if (!m || m.uid === myUserId) return;
     const text = await decMsg(m.enc, m.uid);
     _addFbMsg(text, false, m.ts);
   });
 
-  // Cand celalalt iese, curata si la noi imediat
   db.ref('chats/' + ch).on('value', snap => {
-    if (!snap.exists() && document.getElementById('chat-app').classList.contains('vis')) {
-      if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
-      fbChatRef = null; fbPeerId = null;
-      window._currentChatPath = null;
+    if (!snap.exists() && fbPeerId) {
+      try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
+      fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
       document.getElementById('messages').innerHTML = '';
-      document.getElementById('chat-app').classList.remove('vis');
+      document.getElementById('chat-app').removeAttribute('style');
+      document.getElementById('tirea-app').removeAttribute('style');
       document.getElementById('tirea-app').classList.add('vis');
+      document.getElementById('sb').removeAttribute('style');
     }
   });
 }
