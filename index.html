@@ -1440,8 +1440,23 @@ function closeChat() {
   if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
   fbChatRef = null; fbPeerId = null;
   document.getElementById('messages').innerHTML = '';
+
+  // Restaureaza ecranele
+  document.getElementById('chat-app').style.display = '';
   document.getElementById('chat-app').classList.remove('vis');
-  document.getElementById('tirea-app').classList.add('vis');
+  document.getElementById('calc-app').style.display = '';
+  document.getElementById('sb').style.display = '';
+
+  // Arata tirea daca e logat, altfel calculatorul
+  if (storedHash) {
+    document.getElementById('tirea-app').style.display = '';
+    document.getElementById('tirea-app').classList.add('vis');
+    document.getElementById('calc-app').style.display = 'none';
+    document.getElementById('sb').className = 'status-bar sb-tirea';
+  } else {
+    document.getElementById('calc-app').style.display = 'flex';
+    document.getElementById('sb').className = 'status-bar sb-dark';
+  }
   document.getElementById('p2p-bar').style.display = 'none';
   p2pClose();
 }
@@ -2314,21 +2329,27 @@ function openFbChat(peerId, peerName) {
   fbPeerId = peerId;
   currentChatName = peerName;
 
-  // Ascunde TOATE ecranele si arata chat-ul
-  document.getElementById('tirea-app').classList.remove('vis');
-  ['addfriend-app','qr-app','link-app','pin-app','profil-app','setari-app','p2p-app','secret-app'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('vis');
+  // Ascunde ABSOLUT TOT
+  document.querySelectorAll('.screen > div').forEach(el => {
+    el.style.display = 'none';
+    el.classList.remove('vis', 'show');
   });
-  // Ascunde calculatorul
-  document.getElementById('calc-app').style.display = 'none';
+
+  // Arata DOAR chat-ul
+  const chatEl = document.getElementById('chat-app');
+  chatEl.style.display = 'flex';
+  chatEl.classList.add('vis');
+  chatEl.style.opacity = '1';
+  chatEl.style.transform = 'translateX(0)';
+  chatEl.style.pointerEvents = 'all';
+
+  document.getElementById('sb').style.display = 'flex';
+  document.getElementById('sb').className = 'status-bar sb-tirea';
   document.getElementById('chatName').textContent = peerName;
   document.getElementById('chatAv').textContent = peerName.substr(0,2).toUpperCase();
   document.getElementById('messages').innerHTML = '';
   document.getElementById('msgInput').value = '';
   document.getElementById('discOv').classList.remove('show');
-  document.getElementById('sb').className = 'status-bar sb-tirea';
-  document.getElementById('chat-app').classList.add('vis');
   msgCount = 0;
 
   addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
