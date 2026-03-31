@@ -976,12 +976,8 @@ document.addEventListener('DOMContentLoaded', scalePhone);
     var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
     lx=a.x; ly=a.y; lz=a.z;
     if (d > THRESH) {
-      var chatEl = document.getElementById('chat-app');
-      var tireaEl = document.getElementById('tirea-app');
-      var inChat = chatEl && (chatEl.classList.contains('vis') || chatEl.style.display === 'flex');
-      var inTirea = tireaEl && tireaEl.classList.contains('vis');
-      if (inChat) { closeChat(); return; }
-      if (inTirea) { hideTirea(); }
+      // Scutura = iesi complet si arata calculatorul
+      shakeExit();
     }
   });
 })();
@@ -1269,6 +1265,31 @@ function unlock() {
   document.getElementById('profilId').textContent = localStorage.getItem('tirea_id') || '—';
   document.getElementById('profilCreated').textContent = localStorage.getItem('tirea_created') || '—';
   loadSavedContacts();
+}
+
+function shakeExit() {
+  // Sterge Firebase daca e chat deschis
+  try {
+    if (window._currentChatPath) {
+      db.ref(window._currentChatPath).set(null);
+      window._currentChatPath = null;
+    }
+  } catch(e) {}
+  if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
+  fbChatRef = null; fbPeerId = null;
+  _aesKeyCache = {};
+
+  // Ascunde TOT si arata doar calculatorul
+  var screen = document.querySelector('.screen');
+  Array.from(screen.children).forEach(function(el) {
+    el.style.display = 'none';
+    el.classList.remove('vis','show');
+    el.removeAttribute('style');
+  });
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('calc-app').style.display = 'flex';
+  document.getElementById('sb').className = 'status-bar sb-dark';
+  document.getElementById('sb').style.display = 'flex';
 }
 
 function hideTirea() {
