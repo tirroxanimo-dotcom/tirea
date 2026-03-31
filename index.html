@@ -606,7 +606,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
-
+      <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
       <button class="t-nav-item" id="nav-profil" onclick="openProfil()"><span class="t-nav-icon">👤</span><div class="t-nav-label">Profil</div></button>
       <button class="t-nav-item" id="nav-setari" onclick="openSetari()"><span class="t-nav-icon">⚙️</span><div class="t-nav-label">Setări</div></button>
     </div>
@@ -1275,13 +1275,12 @@ function panicMode() {
 
 function unlock() {
   const ov = document.getElementById('unlockOv');
-  // Curata style-urile inline lasate de shakeExit/hideTirea
   ov.style.cssText = '';
   document.getElementById('tirea-app').style.cssText = '';
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
-  document.getElementById('sb').className = 'status-bar sb-tirea';
   document.getElementById('sb').style.cssText = 'display:flex;z-index:100';
+  document.getElementById('sb').className = 'status-bar sb-tirea';
   // Daca era chat activ, redeschide-l
   if (fbPeerId && fbChatRef && currentChatName) {
     setTimeout(() => {
@@ -1493,7 +1492,7 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // NU sterge Firebase — doar te intoarce la lista de conversatii
+  // NU sterge Firebase — celalt telefon ramane in chat
   if (fbChatRef && fbChatListener) { try { fbChatRef.off('child_added', fbChatListener); } catch(e){} fbChatListener = null; }
   if (fbChatRef) { try { fbChatRef.off('value'); } catch(e){} }
   fbChatRef = null; fbPeerId = null;
