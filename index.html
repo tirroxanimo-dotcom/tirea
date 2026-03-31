@@ -1426,15 +1426,15 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Sterge din Firebase folosind referinta directa
-  if (fbChatRef) {
-    // fbChatRef = chats/XX/msgs — urcam la chats/XX si stergem tot
-    fbChatRef.parent.remove();
-    fbChatRef.off('child_added', fbChatListener);
-    fbChatListener = null;
-    fbChatRef = null;
+  // Sterge tot chatul din Firebase cu calea exacta
+  if (window._currentChatPath) {
+    db.ref(window._currentChatPath).remove()
+      .then(() => console.log('Chat sters din Firebase'))
+      .catch(e => console.error('Eroare stergere:', e));
+    window._currentChatPath = null;
   }
-  fbPeerId = null;
+  if (fbChatRef && fbChatListener) { fbChatRef.off('child_added', fbChatListener); fbChatListener = null; }
+  fbChatRef = null; fbPeerId = null;
   document.getElementById('messages').innerHTML = '';
   document.getElementById('chat-app').classList.remove('vis');
   document.getElementById('tirea-app').classList.add('vis');
@@ -2129,6 +2129,13 @@ const firebaseConfig = {
 try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 const db = firebase.database();
 
+// Test stergere Firebase la pornire
+db.ref('.info/connected').on('value', snap => {
+  if (snap.val() === true) {
+    console.log('Firebase conectat');
+  }
+});
+
 const myUserId = localStorage.getItem('tirea_uid') || (() => {
   const id = 'u_' + Math.random().toString(36).substr(2,12);
   localStorage.setItem('tirea_uid', id);
@@ -2281,6 +2288,7 @@ function openFbChat(peerId, peerName) {
   addSys('🔐 Chat criptat AES-256-GCM · se șterge la închidere');
 
   const ch = channel(myUserId, peerId);
+  window._currentChatPath = 'chats/' + ch;
   fbChatRef = db.ref('chats/' + ch + '/msgs');
   const seenKeys = new Set();
   fbChatListener = fbChatRef.limitToLast(50).on('child_added', async snap => {
