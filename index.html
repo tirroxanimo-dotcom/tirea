@@ -71,7 +71,6 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 /* 0 — cerc normal (nu mai e lat, Samsung One UI modern) */
 .cb.zero { grid-column: span 1; justify-content: center; padding-left: 0; }
 
-@keyframes scanAnim { 0%{top:10%} 50%{top:85%} 100%{top:10%} }
 .reset-row { text-align: center; padding: 2px; background: var(--s-bg); }
 .reset-btn { background: transparent; border: none; color: #e0e0e0; font-size: 10px; cursor: pointer; }
 .samsung-nav { height: 46px; background: var(--s-bg); display: flex; align-items: center; justify-content: center; gap: 32px; border-top: 1px solid #ddd; }
@@ -83,6 +82,20 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   align-items: center; justify-content: center; padding: 32px 28px; gap: 16px;
   opacity: 0; pointer-events: none; transition: opacity 0.4s; z-index: 50; }
 #setup-app.vis { opacity: 1; pointer-events: all; }
+
+/* NAME SETUP */
+#name-setup { position: absolute; inset: 0; background: var(--t-bg); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px 28px; gap: 18px;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s; z-index: 55; }
+#name-setup.vis { opacity: 1; pointer-events: all; }
+.name-input { width: 100%; padding: 16px 18px; background: var(--t-surface); border: 2px solid var(--t-border);
+  border-radius: 16px; color: var(--t-text); font-size: 20px; font-family: inherit;
+  text-align: center; outline: none; letter-spacing: 1px; }
+.name-input:focus { border-color: var(--t-primary); }
+.name-input::placeholder { color: var(--t-muted); font-size: 16px; letter-spacing: 0; }
+.name-ok-btn { width: 100%; padding: 16px; background: var(--t-primary); border: none;
+  border-radius: 16px; color: #1a1a1a; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.name-ok-btn:disabled { background: var(--t-surface); color: var(--t-muted); cursor: not-allowed; }
 .setup-logo { width: 68px; height: 68px; background: var(--t-primary); border-radius: 22px;
   display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 0 50px rgba(255,255,255,0.4); }
 .setup-title { font-size: 20px; font-weight: 600; color: var(--t-text); text-align: center; }
@@ -532,6 +545,22 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div class="setup-warn">⚠️ Codul e stocat ca hash SHA-256.<br>Dacă îl uiți nu există recuperare.</div>
   </div>
 
+  <!-- NAME SETUP -->
+  <div id="name-setup">
+    <div class="setup-logo">👤</div>
+    <div class="setup-title">Cum vrei să te cheme?</div>
+    <div class="setup-sub">Prietenii tăi vor vedea acest nume în chat.<br>Poți folosi orice poreclă vrei.</div>
+    <input class="name-input" id="nameInput" type="text" maxlength="24"
+      placeholder="Numele sau porecla ta..."
+      oninput="nameTyped(this)"
+      onkeydown="if(event.key==='Enter'&&this.value.trim().length>=2)confirmName()"
+      autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="name-ok-btn" id="nameOkBtn" onclick="confirmName()" disabled>Continuă ›</button>
+    <div style="font-size:11px;color:var(--t-muted);text-align:center;line-height:1.6">
+      Numele nu se trimite nicăieri până nu adaugi un prieten.
+    </div>
+  </div>
+
   <!-- UNLOCK -->
   <div class="unlock-ov" id="unlockOv">
     <div class="unlock-ring">🔓</div>
@@ -820,24 +849,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-id-text" id="qrIdText">ID: —</div>
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
-      <button class="qr-scan-btn" onclick="startQRScanner()">📷 Scanează QR live</button>
-      <div id="qrScannerWrap" style="display:none;width:100%;position:relative;border-radius:16px;overflow:hidden;background:#000;">
-        <video id="qrVideo" style="width:100%;height:240px;object-fit:cover;display:block;" autoplay playsinline muted></video>
-        <canvas id="qrCanvas" style="display:none"></canvas>
-        <!-- overlay intucat -->
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-          <div style="position:relative;width:180px;height:180px;">
-            <!-- colturi verzi -->
-            <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #4caf50;border-left:3px solid #4caf50;border-radius:4px 0 0 0;"></div>
-            <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #4caf50;border-right:3px solid #4caf50;border-radius:0 4px 0 0;"></div>
-            <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #4caf50;border-left:3px solid #4caf50;border-radius:0 0 0 4px;"></div>
-            <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #4caf50;border-right:3px solid #4caf50;border-radius:0 0 4px 0;"></div>
-            <!-- linie de scanare animata -->
-            <div id="scanLine" style="position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,#4caf50,transparent);animation:scanAnim 1.5s infinite;top:50%;"></div>
-          </div>
-        </div>
-        <button onclick="stopQRScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;pointer-events:all;">✕</button>
-      </div>
+      <input type="file" id="qrCameraInput" accept="image/*" capture="environment" style="display:none" onchange="readQRFromImage(this)">
+      <button class="qr-scan-btn" onclick="document.getElementById('qrCameraInput').click()">📷 Scanează QR</button>
+      <div class="qr-scan-result" id="qrScanResult"></div>
       <div class="qr-scan-result" id="qrScanResult"></div>
     </div>
   </div>
@@ -1137,6 +1151,23 @@ async function confirmSetup() {
   const id = 'tir_' + Math.random().toString(36).slice(2,8);
   localStorage.setItem('tirea_id', id);
   document.getElementById('setup-app').classList.remove('vis');
+  // Arata ecranul de nume
+  const ni = document.getElementById('nameInput');
+  ni.value = '';
+  document.getElementById('nameOkBtn').disabled = true;
+  document.getElementById('name-setup').classList.add('vis');
+  setTimeout(() => ni.focus(), 300);
+}
+
+function nameTyped(el) {
+  document.getElementById('nameOkBtn').disabled = el.value.trim().length < 2;
+}
+
+function confirmName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (name.length < 2) return;
+  localStorage.setItem('tirea_display_name', name);
+  document.getElementById('name-setup').classList.remove('vis');
   cur = '0';
   document.getElementById('cNum').textContent = '0';
   document.getElementById('cNum').className = 'calc-num';
@@ -1208,6 +1239,15 @@ function unlock() {
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
   document.getElementById('sb').className = 'status-bar sb-tirea';
+  // Afiseaza numele real in avatar
+  const displayName = localStorage.getItem('tirea_display_name') || 'EU';
+  const initials = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || 'EU';
+  const myStoryAv = document.querySelector('.t-stories .s-av');
+  if (myStoryAv) myStoryAv.textContent = initials;
+  const profilAv = document.querySelector('.profil-av');
+  if (profilAv) profilAv.textContent = initials;
+  document.getElementById('profilHandle').textContent = '@' + displayName.toLowerCase().replace(/\s+/g,'_');
+  document.querySelector('.profil-name') && (document.querySelector('.profil-name').textContent = displayName);
   setTimeout(() => {
     ov.classList.remove('show');
     document.getElementById('tirea-app').classList.add('vis');
@@ -1704,64 +1744,7 @@ function drawQR() {
   }
 }
 
-// ── QR LIVE SCANNER ──
-var qrScanInterval = null;
-var qrStream = null;
-
-function startQRScanner() {
-  var wrap = document.getElementById('qrScannerWrap');
-  var video = document.getElementById('qrVideo');
-  var res = document.getElementById('qrScanResult');
-  res.textContent = 'Îndreaptă camera spre codul QR...';
-  res.style.color = 'var(--t-muted)';
-  wrap.style.display = 'block';
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-    .then(function(stream) {
-      qrStream = stream;
-      video.srcObject = stream;
-      video.play();
-      qrScanInterval = setInterval(scanQRFrame, 250);
-    })
-    .catch(function() {
-      wrap.style.display = 'none';
-      res.textContent = '✗ Nu s-a putut accesa camera';
-      res.style.color = 'var(--t-red)';
-    });
-}
-
-function scanQRFrame() {
-  var video = document.getElementById('qrVideo');
-  var canvas = document.getElementById('qrCanvas');
-  if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-  var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-  if (typeof jsQR === 'undefined') return;
-  var code = jsQR(imageData.data, imageData.width, imageData.height);
-  if (code) {
-    stopQRScanner();
-    var parts = code.data.split('|');
-    var peerId = parts[0], peerName = parts[1] || 'Prieten';
-    var res = document.getElementById('qrScanResult');
-    res.textContent = '✓ ' + peerName + ' găsit!';
-    res.style.color = 'var(--t-green)';
-    if (navigator.vibrate) navigator.vibrate(100);
-    var myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
-    db.ref('signals/' + peerId).set({ from: myUserId, fromName: myName, ts: Date.now() });
-    addContactToList(peerName, peerId);
-    setTimeout(function() { closePage('qr-app'); closePage('addfriend-app'); openFbChat(peerId, peerName); }, 800);
-  }
-}
-
-function stopQRScanner() {
-  clearInterval(qrScanInterval); qrScanInterval = null;
-  if (qrStream) { qrStream.getTracks().forEach(function(t){ t.stop(); }); qrStream = null; }
-  var wrap = document.getElementById('qrScannerWrap');
-  if (wrap) wrap.style.display = 'none';
-}
-
-function simulateScan() { startQRScanner(); }
+function simulateScan() { document.getElementById('qrCameraInput').click(); }
 
 function readQRFromImage(input) {
   const file = input.files[0];
