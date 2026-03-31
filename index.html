@@ -960,25 +960,60 @@ document.addEventListener('DOMContentLoaded', scalePhone);
 
 // SHAKE TO HIDE — scutura sa ascunda Tirea
 (function() {
-  var THRESH = 20, last = 0, lx = null, ly = null, lz = null;
-  function req() {
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      DeviceMotionEvent.requestPermission().catch(function(){});
+  var THRESH = 15;
+  var last = 0, lx = null, ly = null, lz = null;
+  var shakeCount = 0, shakeTimer = null;
+  var listening = false;
+
+  function onMotion(e) {
+    // Foloseste acceleration (fara gravitatie) daca e disponibil, mai precis
+    var a = e.acceleration;
+    if (!a || (a.x === null && a.y === null && a.z === null)) {
+      a = e.accelerationIncludingGravity;
+    }
+    if (!a) return;
+    var now = Date.now();
+    if (now - last < 60) return;
+    last = now;
+    var x = a.x || 0, y = a.y || 0, z = a.z || 0;
+    if (lx === null) { lx = x; ly = y; lz = z; return; }
+    var d = Math.abs(x - lx) + Math.abs(y - ly) + Math.abs(z - lz);
+    lx = x; ly = y; lz = z;
+    if (d > THRESH) {
+      shakeCount++;
+      if (shakeTimer) clearTimeout(shakeTimer);
+      shakeTimer = setTimeout(function() { shakeCount = 0; }, 600);
+      if (shakeCount >= 2) {
+        shakeCount = 0;
+        if (shakeTimer) { clearTimeout(shakeTimer); shakeTimer = null; }
+        shakeExit();
+      }
     }
   }
-  document.addEventListener('DOMContentLoaded', function() {
-    document.body.addEventListener('click', req, { once: true });
-  });
-  window.addEventListener('devicemotion', function(e) {
-    var a = e.accelerationIncludingGravity; if (!a) return;
-    var now = Date.now(); if (now - last < 80) return; last = now;
-    if (lx === null) { lx=a.x; ly=a.y; lz=a.z; return; }
-    var d = Math.abs(a.x-lx) + Math.abs(a.y-ly) + Math.abs(a.z-lz);
-    lx=a.x; ly=a.y; lz=a.z;
-    if (d > THRESH) {
-      // Scutura = iesi complet si arata calculatorul
-      shakeExit();
+
+  function startMotion() {
+    if (listening) return;
+    listening = true;
+    window.addEventListener('devicemotion', onMotion, true);
+  }
+
+  function requestAndStart() {
+    if (typeof DeviceMotionEvent !== 'undefined' &&
+        typeof DeviceMotionEvent.requestPermission === 'function') {
+      // iOS 13+ — trebuie permisiune explicita
+      DeviceMotionEvent.requestPermission().then(function(r) {
+        if (r === 'granted') startMotion();
+      }).catch(function() {});
+    } else {
+      // Android / orice alt browser
+      startMotion();
     }
+  }
+
+  // Porneste la primul touch sau click
+  document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('touchstart', requestAndStart, { once: true, passive: true });
+    document.addEventListener('click', requestAndStart, { once: true });
   });
 })();
 
@@ -1454,7 +1489,7 @@ function toggleReadReceipt() {
 }
 
 function closeChat() {
-  // Sterge tot din Firebase — inclusiv 'active' ca semnal pentru celalalt
+  // Sterge tot din Firebase
   try {
     if (window._currentChatPath) {
       db.ref(window._currentChatPath).set(null);
@@ -2336,45 +2371,28 @@ function goToChat(peerId, peerName) {
   });
 
   // Cand celalalt iese, curatam si noi
-  // Marcheaza chatul ca activ — semnalul de stergere vine de la celalalt
-  db.ref('chats/' + ch + '/active').set(true);
-
-  const chRootRef = db.ref('chats/' + ch + '/active');
+  let chatHadMessages = false;
+  const chRootRef = db.ref('chats/' + ch);
   chRootRef.on('value', snap => {
-    // Daca nodul 'active' a disparut = celalalt a iesit
-    if (snap.exists()) return;
+    if (snap.exists()) { chatHadMessages = true; return; }
+    if (!chatHadMessages) return;
     if (fbPeerId !== peerId) return;
-    // Curata tot
+    // Inchide chat pe al doilea telefon
     try { if(fbChatRef&&fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e){}
     try { chRootRef.off('value'); } catch(e){}
-    fbChatRef = null; fbChatListener = null; fbPeerId = null;
-    window._currentChatPath = null; _aesKeyCache = {};
-
-    // Sterge mesajele locale
+    fbChatRef = null; fbChatListener = null; fbPeerId = null; window._currentChatPath = null;
+    _aesKeyCache = {};
     document.getElementById('messages').innerHTML = '';
-
-    // Reseteaza toate paginile corect
-    const allPages = ['chat-app','tirea-app','calc-app','setup-app','name-setup',
-      'profil-app','setari-app','p2p-app','secret-app','addfriend-app',
-      'qr-app','link-app','pin-app'];
-    allPages.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.remove('vis','show');
-      el.removeAttribute('style');
+    const chatEl = document.getElementById('chat-app');
+    chatEl.classList.remove('vis');
+    chatEl.removeAttribute('style');
+    Array.from(document.querySelector('.screen').children).forEach(el => {
+      if (el.id !== 'sb') { el.style.display = ''; el.classList.remove('vis','show'); }
     });
-    document.getElementById('p2p-bar').style.display = 'none';
     document.getElementById('sb').removeAttribute('style');
     document.getElementById('sb').className = 'status-bar sb-tirea';
     document.getElementById('tirea-app').classList.add('vis');
     document.getElementById('calc-app').style.display = 'none';
-
-    // Notificare vizuala
-    const note = document.createElement('div');
-    note.style.cssText = 'position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#ccc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;white-space:nowrap;border:0.5px solid #555';
-    note.textContent = '💨 Conversația a fost ștearsă';
-    document.querySelector('.screen').appendChild(note);
-    setTimeout(() => note.remove(), 3000);
   });
 }
 
