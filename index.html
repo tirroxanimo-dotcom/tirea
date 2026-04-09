@@ -1321,13 +1321,32 @@ function unlock() {
 }
 
 function shakeExit() {
-  // NU sterge Firebase, NU deconecteaza — doar ascunde interfata
+  if (window._callTimer) { clearInterval(window._callTimer); window._callTimer = null; }
+  if (typeof fbPeerId !== 'undefined' && fbPeerId && typeof fbChatRef !== 'undefined' && fbChatRef) {
+    try { if (window._currentChatPath) db.ref(window._currentChatPath).set(null); } catch(e) {}
+    try { if(fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e) {}
+    fbChatListener = null; fbChatRef = null; fbPeerId = null;
+    window._currentChatPath = null;
+    if (typeof _aesKeyCache !== 'undefined') _aesKeyCache = {};
+  }
+  try { p2pClose(); } catch(e) {}
+  try { stopQRScan(); } catch(e) {}
+  try { document.getElementById('messages').innerHTML = ''; } catch(e) {}
+  try { document.getElementById('p2p-bar').style.display = 'none'; } catch(e) {}
+  try { document.getElementById('callOv').classList.remove('show'); } catch(e) {}
+  try { var d=document.getElementById('discOv'); d.classList.remove('show'); d.style.display='none'; } catch(e) {}
+  try { document.getElementById('genericModal').classList.remove('show'); } catch(e) {}
+  try { document.getElementById('confirmModal').classList.remove('show'); } catch(e) {}
+  try { var s=document.getElementById('incomingSignal'); if(s) s.remove(); } catch(e) {}
   var screen = document.querySelector('.screen');
   Array.from(screen.children).forEach(function(el) {
-    el.classList.remove('vis','show');
-    // Reseteaza orice style inline
+    el.classList.remove('vis', 'show');
     el.style.cssText = 'display:none';
   });
+  document.getElementById('calc-app').style.cssText = 'display:flex;position:absolute;inset:0;z-index:1;flex-direction:column;background:#f0f0f0;';
+  document.getElementById('sb').style.cssText = 'display:flex;position:absolute;top:0;left:0;right:0;height:36px;z-index:100;align-items:center;justify-content:space-between;padding:0 22px;';
+  document.getElementById('sb').className = 'status-bar sb-dark';
+}
 
   // Arata DOAR calculatorul si status bar
   document.getElementById('calc-app').style.cssText = 'display:flex;position:absolute;inset:0;z-index:1';
