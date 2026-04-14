@@ -307,7 +307,11 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .sys-msg { text-align: center; font-size: 10px; color: #888; background: #333;
   padding: 5px 14px; border-radius: 20px; align-self: center; font-family: monospace; border: 1px solid #444; }
 .chat-input-area { padding: 10px 14px 28px; border-top: 1px solid #444; background: #2a2a2a;
-  display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.chat-stego-btn { width: 36px; height: 36px; background: #3d3d3d; border: 0.5px solid #555;
+  border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+.chat-stego-btn:active { background: #555; }
 .msg-input { flex: 1; padding: 10px 16px; background: #3d3d3d; border: none;
   border-radius: 24px; color: #f0f0f0; font-size: 14px; font-family: inherit; outline: none;
   resize: none; max-height: 80px; }
@@ -471,6 +475,48 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .pin-regen-btn { padding:12px 24px;background:var(--t-surface);border:0.5px solid var(--t-border);
   border-radius:12px;color:var(--t-text);font-size:14px;cursor:pointer;font-family:inherit; }
 .pin-note { font-size:12px;color:var(--t-muted);text-align:center;line-height:1.7; }
+
+/* STEGO APP */
+#stego-app { position:absolute;inset:0;background:var(--t-bg);display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transition:opacity 0.3s,transform 0.3s;z-index:80;transform:translateX(100%); }
+#stego-app.vis { opacity:1;pointer-events:all;transform:translateX(0); }
+.stego-scroll { flex:1;overflow-y:auto;padding:14px 20px 40px;display:flex;flex-direction:column;gap:14px; }
+.stego-scroll::-webkit-scrollbar { display:none; }
+.stego-tabs { display:flex;gap:8px; }
+.stego-tab { flex:1;padding:10px;border:0.5px solid var(--t-border);border-radius:12px;
+  background:var(--t-surface);color:var(--t-muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.2s; }
+.stego-tab.active { background:var(--t-primary);color:#1a1a1a;border-color:var(--t-primary);font-weight:700; }
+.stego-panel { display:flex;flex-direction:column;gap:12px; }
+.stego-label { font-size:11px;color:var(--t-muted);letter-spacing:1px;font-weight:600; }
+.stego-img-box { width:100%;aspect-ratio:1;background:var(--t-surface);border:2px dashed var(--t-border);
+  border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;cursor:pointer;position:relative;overflow:hidden;transition:border-color 0.2s; }
+.stego-img-box:active { border-color:var(--t-primary); }
+.stego-img-box img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px; }
+.stego-img-placeholder { font-size:36px; }
+.stego-img-hint { font-size:12px;color:var(--t-muted);text-align:center; }
+.stego-textarea { width:100%;padding:14px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:14px;color:var(--t-text);font-size:14px;font-family:inherit;resize:none;
+  height:100px;outline:none; }
+.stego-textarea:focus { border-color:var(--t-primary); }
+.stego-textarea::placeholder { color:var(--t-muted); }
+.stego-btn { width:100%;padding:14px;background:var(--t-primary);border:none;border-radius:14px;
+  color:#1a1a1a;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s; }
+.stego-btn:disabled { opacity:0.35;cursor:not-allowed; }
+.stego-btn.danger { background:var(--t-surface);color:var(--t-text);border:0.5px solid var(--t-border); }
+.stego-status { font-size:12px;text-align:center;min-height:18px;font-weight:600;color:var(--t-green); }
+.stego-status.err { color:var(--t-red); }
+.stego-result-box { width:100%;padding:14px;background:var(--t-surface2);border:0.5px solid var(--t-border);
+  border-radius:14px;font-size:14px;color:var(--t-text);word-break:break-word;line-height:1.6;min-height:60px; }
+.stego-info-row { display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(255,255,255,0.04);border:0.5px solid var(--t-border);border-radius:12px;font-size:11px;color:var(--t-muted); }
+.stego-info-icon { font-size:18px;flex-shrink:0; }
+.stego-pass-input { width:100%;padding:13px 14px;background:var(--t-surface);border:0.5px solid var(--t-border);
+  border-radius:14px;color:var(--t-text);font-size:15px;font-family:monospace;outline:none;
+  letter-spacing:2px; }
+.stego-pass-input:focus { border-color:var(--t-primary); }
+.stego-pass-input::placeholder { letter-spacing:0;font-size:13px;color:var(--t-muted); }
+.stego-capacity { font-size:10px;color:var(--t-muted);text-align:right;margin-top:-6px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -697,6 +743,12 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="s-row-info"><div class="s-row-label" style="color:var(--t-red)">Panic Mode</div><div class="s-row-sub">șterge tot Tirea imediat</div></div>
         <span class="setari-arrow" style="color:var(--t-red)">›</span>
       </div>
+      <div class="setari-group-title">MESAJ SECRET ÎN POZĂ</div>
+      <div class="setari-row" onclick="openStego()">
+        <div class="s-row-icon" style="background:rgba(255,255,255,0.07)">🖼️</div>
+        <div class="s-row-info"><div class="s-row-label">Steganografie</div><div class="s-row-sub">ascunde mesaje criptate în poze · AES-256 + LSB</div></div>
+        <span class="setari-arrow">›</span>
+      </div>
       <div class="setari-group-title">DESPRE</div>
       <div class="setari-row">
         <div class="s-row-icon" style="background:rgba(255,255,255,0.1)">🛡️</div>
@@ -704,6 +756,75 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <span class="setari-val" style="color:var(--t-green)">activ</span>
       </div>
       <div class="version-footer">T.IREA · SHA-256 · v3.0</div>
+    </div>
+  </div>
+
+  <!-- STEGO APP -->
+  <div id="stego-app">
+    <div class="page-topbar">
+      <span class="page-back" onclick="closePage('stego-app')">‹</span>
+      <div class="page-title">🖼️ Mesaj în poză</div>
+    </div>
+    <div class="stego-scroll">
+
+      <div class="stego-tabs">
+        <button class="stego-tab active" id="stego-tab-hide" onclick="stegoTab('hide')">🔒 Ascunde</button>
+        <button class="stego-tab" id="stego-tab-read" onclick="stegoTab('read')">🔓 Extrage</button>
+      </div>
+
+      <!-- PANEL: ASCUNDE -->
+      <div class="stego-panel" id="stego-hide-panel">
+        <div class="stego-info-row">
+          <span class="stego-info-icon">🔐</span>
+          <span>AES-256 + steganografie LSB — dublu criptat, invizibil în poză</span>
+        </div>
+
+        <div class="stego-label">1. ALEGE O POZĂ</div>
+        <div class="stego-img-box" id="stegoHideImgBox" onclick="document.getElementById('stegoHideFileInput').click()">
+          <div class="stego-img-placeholder">🖼️</div>
+          <div class="stego-img-hint">Apasă să alegi poza<br><span style="font-size:10px;opacity:0.6">jpg · png · webp</span></div>
+          <img id="stegoHideImgPreview" style="display:none">
+        </div>
+        <input type="file" id="stegoHideFileInput" accept="image/*" style="display:none" onchange="stegoLoadHideImage(this)">
+        <div class="stego-capacity" id="stegoCapacity"></div>
+
+        <div class="stego-label">2. MESAJUL SECRET</div>
+        <textarea class="stego-textarea" id="stegoHideMsg" placeholder="Scrie mesajul secret..." oninput="stegoCheckCapacity()"></textarea>
+
+        <div class="stego-label">3. PAROLĂ SUPLIMENTARĂ (opțional)</div>
+        <input class="stego-pass-input" id="stegoHidePass" type="password"
+          placeholder="Parolă extra — știți doar voi doi..."
+          autocomplete="off" spellcheck="false">
+
+        <button class="stego-btn" id="stegoHideBtn" onclick="stegoHide()" disabled>🔒 Ascunde în poză</button>
+        <div class="stego-status" id="stegoHideStatus"></div>
+      </div>
+
+      <!-- PANEL: EXTRAGE -->
+      <div class="stego-panel" id="stego-read-panel" style="display:none">
+        <div class="stego-info-row">
+          <span class="stego-info-icon">📥</span>
+          <span>Încarcă poza primită — app-ul extrage și decriptează automat</span>
+        </div>
+
+        <div class="stego-label">1. ALEGE POZA PRIMITĂ</div>
+        <div class="stego-img-box" id="stegoReadImgBox" onclick="document.getElementById('stegoReadFileInput').click()">
+          <div class="stego-img-placeholder">📂</div>
+          <div class="stego-img-hint">Alege poza primită<br><span style="font-size:10px;opacity:0.6">salvată din WhatsApp · Telegram · etc</span></div>
+          <img id="stegoReadImgPreview" style="display:none">
+        </div>
+        <input type="file" id="stegoReadFileInput" accept="image/*" style="display:none" onchange="stegoLoadReadImage(this)">
+
+        <div class="stego-label">2. PAROLĂ (dacă a fost setată)</div>
+        <input class="stego-pass-input" id="stegoReadPass" type="password"
+          placeholder="Parola folosită la ascundere..."
+          autocomplete="off" spellcheck="false">
+
+        <button class="stego-btn" id="stegoReadBtn" onclick="stegoRead()" disabled>🔓 Extrage mesajul</button>
+        <div class="stego-status" id="stegoReadStatus"></div>
+        <div class="stego-result-box" id="stegoResult" style="display:none"></div>
+      </div>
+
     </div>
   </div>
 
@@ -727,9 +848,52 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       ⚡ P2P conectat · direct · fără server
     </div>
     <div class="chat-input-area">
+      <button class="chat-stego-btn" onclick="document.getElementById('chatStegoFileInput').click()" title="Încarcă poză cu mesaj ascuns">📂</button>
+      <button class="chat-stego-btn" onclick="openChatStegoSend()" title="Ascunde mesaj în poză">🖼️</button>
       <textarea class="msg-input" id="msgInput" placeholder="Scrie un mesaj..." rows="1"
         onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" onclick="sendMsg()">▶</button>
+    </div>
+    <input type="file" id="chatStegoFileInput" accept="image/*" style="display:none" onchange="chatStegoReceive(this)">
+
+    <!-- STEGO SEND OVERLAY în chat -->
+    <div id="chatStegoOv" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.92);z-index:200;flex-direction:column;align-items:stretch;padding:0;">
+      <div style="padding:42px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #444;flex-shrink:0;background:#2a2a2a;">
+        <span style="color:#fff;font-size:22px;cursor:pointer;padding:4px 10px 4px 0;" onclick="closeChatStegoOv()">‹</span>
+        <span style="font-size:15px;font-weight:700;color:#fff;">🖼️ Mesaj în poză</span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:12px;color:#888;text-align:center;line-height:1.6;">
+          Mesajul va fi criptat <b style="color:#fff">AES-256</b> și ascuns în poză.<br>
+          Poți trimite poza direct în Tirea <b style="color:#fff">sau</b> salva și trimite pe WhatsApp.
+        </div>
+        <!-- Alegere poză -->
+        <div id="csImgBox" onclick="document.getElementById('csStegoImgInput').click()"
+          style="width:100%;aspect-ratio:16/9;background:#333;border:2px dashed #555;border-radius:14px;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;position:relative;overflow:hidden;">
+          <span style="font-size:32px;">🖼️</span>
+          <span style="font-size:12px;color:#888;">Alege o poză de fundal</span>
+          <img id="csImgPreview" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px;">
+        </div>
+        <input type="file" id="csStegoImgInput" accept="image/*" style="display:none" onchange="csStegoLoadImg(this)">
+        <!-- Mesaj -->
+        <textarea id="csStegoMsg" placeholder="Scrie mesajul secret..." rows="3"
+          style="width:100%;padding:12px;background:#333;border:0.5px solid #555;border-radius:12px;
+          color:#f0f0f0;font-size:14px;font-family:inherit;resize:none;outline:none;"></textarea>
+        <div id="csStegoCapacity" style="font-size:10px;color:#666;text-align:right;margin-top:-8px;"></div>
+        <!-- Butoane actiune -->
+        <button id="csStegoSendBtn" onclick="csStegoSendDirect()" disabled
+          style="width:100%;padding:13px;background:#fff;border:none;border-radius:14px;
+          color:#1a1a1a;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.4;">
+          ▶ Trimite în Tirea
+        </button>
+        <button id="csStegoSaveBtn" onclick="csStegoSaveWA()" disabled
+          style="width:100%;padding:13px;background:#3d3d3d;border:0.5px solid #555;border-radius:14px;
+          color:#f0f0f0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;opacity:0.4;">
+          💾 Salvează pentru WhatsApp
+        </button>
+        <div id="csStegoStatus" style="font-size:12px;text-align:center;min-height:18px;color:#4caf50;font-weight:600;"></div>
+      </div>
     </div>
     <div class="disc-ov" id="discOv">
       <div class="disc-icon">💨</div>
@@ -1285,8 +1449,11 @@ function panicMode() {
 
 function unlock() {
   const ov = document.getElementById('unlockOv');
+  ov.style.cssText = '';
+  document.getElementById('tirea-app').style.cssText = '';
   document.getElementById('calc-app').style.display = 'none';
   ov.classList.add('show');
+  document.getElementById('sb').style.cssText = 'display:flex;z-index:100';
   document.getElementById('sb').className = 'status-bar sb-tirea';
   // Daca era chat activ, redeschide-l
   if (fbPeerId && fbChatRef && currentChatName) {
@@ -1321,32 +1488,13 @@ function unlock() {
 }
 
 function shakeExit() {
-  if (window._callTimer) { clearInterval(window._callTimer); window._callTimer = null; }
-  if (typeof fbPeerId !== 'undefined' && fbPeerId && typeof fbChatRef !== 'undefined' && fbChatRef) {
-    try { if (window._currentChatPath) db.ref(window._currentChatPath).set(null); } catch(e) {}
-    try { if(fbChatListener) fbChatRef.off('child_added', fbChatListener); } catch(e) {}
-    fbChatListener = null; fbChatRef = null; fbPeerId = null;
-    window._currentChatPath = null;
-    if (typeof _aesKeyCache !== 'undefined') _aesKeyCache = {};
-  }
-  try { p2pClose(); } catch(e) {}
-  try { stopQRScan(); } catch(e) {}
-  try { document.getElementById('messages').innerHTML = ''; } catch(e) {}
-  try { document.getElementById('p2p-bar').style.display = 'none'; } catch(e) {}
-  try { document.getElementById('callOv').classList.remove('show'); } catch(e) {}
-  try { var d=document.getElementById('discOv'); d.classList.remove('show'); d.style.display='none'; } catch(e) {}
-  try { document.getElementById('genericModal').classList.remove('show'); } catch(e) {}
-  try { document.getElementById('confirmModal').classList.remove('show'); } catch(e) {}
-  try { var s=document.getElementById('incomingSignal'); if(s) s.remove(); } catch(e) {}
+  // NU sterge Firebase, NU deconecteaza — doar ascunde interfata
   var screen = document.querySelector('.screen');
   Array.from(screen.children).forEach(function(el) {
-    el.classList.remove('vis', 'show');
+    el.classList.remove('vis','show');
+    // Reseteaza orice style inline
     el.style.cssText = 'display:none';
   });
-  document.getElementById('calc-app').style.cssText = 'display:flex;position:absolute;inset:0;z-index:1;flex-direction:column;background:#f0f0f0;';
-  document.getElementById('sb').style.cssText = 'display:flex;position:absolute;top:0;left:0;right:0;height:36px;z-index:100;align-items:center;justify-content:space-between;padding:0 22px;';
-  document.getElementById('sb').className = 'status-bar sb-dark';
-}
 
   // Arata DOAR calculatorul si status bar
   document.getElementById('calc-app').style.cssText = 'display:flex;position:absolute;inset:0;z-index:1';
@@ -2394,9 +2542,14 @@ function goToChat(peerId, peerName) {
     seenKeys.add(snap.key);
     const m = snap.val();
     if (!m || m.uid === myUserId) return;
-    // Decripteaza folosind ID-ul expeditorului
     const text = await decMsg(m.enc, m.uid);
-    _addFbMsg(text, false, m.ts);
+    // Detecteaza mesaj stego
+    if (text.startsWith('__STEGO__:')) {
+      const dataUrl = text.slice(10);
+      csAddStegoMsgInChat(dataUrl, false);
+    } else {
+      _addFbMsg(text, false, m.ts);
+    }
   });
 
   // Cand celalalt iese, curatam si noi
@@ -2458,6 +2611,567 @@ function callFriend(peerId, peerName) {
   });
   openFbChat(peerId, peerName);
   addSys('📡 Semnal trimis — așteptăm răspuns...');
+}
+
+// ═══════════════════════════════════════════════════════
+// STEGANOGRAFIE — AES-256-GCM + LSB în imagine
+// ═══════════════════════════════════════════════════════
+
+let _stegoHideCanvas = null;
+let _stegoReadCanvas = null;
+
+function openStego() {
+  document.getElementById('stego-app').classList.add('vis');
+  stegoTab('hide');
+  // Reset complet
+  _stegoHideCanvas = null;
+  _stegoReadCanvas = null;
+  document.getElementById('stegoHideImgPreview').style.display = 'none';
+  document.getElementById('stegoHideImgPreview').src = '';
+  document.getElementById('stegoHideMsg').value = '';
+  document.getElementById('stegoHidePass').value = '';
+  document.getElementById('stegoHideStatus').textContent = '';
+  document.getElementById('stegoHideStatus').className = 'stego-status';
+  document.getElementById('stegoHideBtn').disabled = true;
+  document.getElementById('stegoCapacity').textContent = '';
+  document.getElementById('stegoReadImgPreview').style.display = 'none';
+  document.getElementById('stegoReadImgPreview').src = '';
+  document.getElementById('stegoReadPass').value = '';
+  document.getElementById('stegoReadStatus').textContent = '';
+  document.getElementById('stegoReadStatus').className = 'stego-status';
+  document.getElementById('stegoReadBtn').disabled = true;
+  document.getElementById('stegoResult').style.display = 'none';
+  document.getElementById('stegoResult').textContent = '';
+  // Sterge fisierele selectate
+  document.getElementById('stegoHideFileInput').value = '';
+  document.getElementById('stegoReadFileInput').value = '';
+}
+
+function stegoTab(tab) {
+  document.getElementById('stego-tab-hide').classList.toggle('active', tab === 'hide');
+  document.getElementById('stego-tab-read').classList.toggle('active', tab === 'read');
+  document.getElementById('stego-hide-panel').style.display = tab === 'hide' ? 'flex' : 'none';
+  document.getElementById('stego-read-panel').style.display = tab === 'read' ? 'flex' : 'none';
+}
+
+// Incarca imaginea pentru ascundere
+function stegoLoadHideImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      _stegoHideCanvas = canvas;
+      const preview = document.getElementById('stegoHideImgPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('stegoHideBtn').disabled = false;
+      stegoCheckCapacity();
+      document.getElementById('stegoHideStatus').textContent = '✓ Poză încărcată · ' + img.width + '×' + img.height;
+      document.getElementById('stegoHideStatus').className = 'stego-status';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Incarca imaginea pentru extragere
+function stegoLoadReadImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      _stegoReadCanvas = canvas;
+      const preview = document.getElementById('stegoReadImgPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('stegoReadBtn').disabled = false;
+      document.getElementById('stegoReadStatus').textContent = '✓ Poză încărcată · ' + img.width + '×' + img.height;
+      document.getElementById('stegoReadStatus').className = 'stego-status';
+      document.getElementById('stegoResult').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Verifica capacitatea imaginii
+function stegoCheckCapacity() {
+  if (!_stegoHideCanvas) return;
+  const maxBytes = Math.floor((_stegoHideCanvas.width * _stegoHideCanvas.height * 3) / 8) - 8;
+  const msgLen = document.getElementById('stegoHideMsg').value.length;
+  const capEl = document.getElementById('stegoCapacity');
+  if (msgLen === 0) {
+    capEl.textContent = 'Capacitate max: ~' + maxBytes + ' caractere';
+  } else if (msgLen * 4 > maxBytes) {
+    capEl.textContent = '⚠️ Mesaj prea lung pentru această poză!';
+    capEl.style.color = 'var(--t-red)';
+  } else {
+    capEl.textContent = msgLen + ' / ' + Math.floor(maxBytes/4) + ' caractere';
+    capEl.style.color = 'var(--t-muted)';
+  }
+}
+
+// ── DERIVARE CHEIE AES DIN PAROLA ──
+async function stegoGetKey(password) {
+  const base = (sharedSecret || '') + (password || '') + 'stego_tirea_v1';
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(base),
+    { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('tirea_stego_salt'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+// ── CRIPTARE AES-256-GCM ──
+async function stegoEncrypt(text, password) {
+  const key = await stegoGetKey(password);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key, new TextEncoder().encode(text)
+  );
+  // iv (12 bytes) + ciphertext
+  const result = new Uint8Array(12 + enc.byteLength);
+  result.set(iv, 0);
+  result.set(new Uint8Array(enc), 12);
+  return result;
+}
+
+// ── DECRIPTARE AES-256-GCM ──
+async function stegoDecrypt(data, password) {
+  const key = await stegoGetKey(password);
+  const iv = data.slice(0, 12);
+  const ciphertext = data.slice(12);
+  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return new TextDecoder().decode(dec);
+}
+
+// ── LSB EMBED — ascunde bytes în pixelii imaginii ──
+function lsbEmbed(canvas, dataBytes) {
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imgData.data; // RGBA
+
+  // Primii 4 bytes (32 bit) = lungimea datei (big-endian)
+  const totalLen = dataBytes.length;
+  const lenBytes = new Uint8Array(4);
+  lenBytes[0] = (totalLen >> 24) & 0xFF;
+  lenBytes[1] = (totalLen >> 16) & 0xFF;
+  lenBytes[2] = (totalLen >> 8)  & 0xFF;
+  lenBytes[3] =  totalLen        & 0xFF;
+
+  const allBytes = new Uint8Array(4 + dataBytes.length);
+  allBytes.set(lenBytes, 0);
+  allBytes.set(dataBytes, 4);
+
+  // Fiecare byte = 8 biti, fiecare bit in LSB al unui canal RGB
+  // Sari canalul Alpha (index 3,7,11,...)
+  let bitIndex = 0;
+  let pixelPos = 0; // pozitie in canale RGB (sare alpha)
+
+  for (let i = 0; i < allBytes.length; i++) {
+    for (let bit = 7; bit >= 0; bit--) {
+      // Sare canalul alpha
+      while ((pixelPos % 4) === 3) pixelPos++;
+      const b = (allBytes[i] >> bit) & 1;
+      pixels[pixelPos] = (pixels[pixelPos] & 0xFE) | b;
+      pixelPos++;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ── LSB EXTRACT — extrage bytes din pixeli ──
+function lsbExtract(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imgData.data;
+
+  // Citeste primii 32 biti = lungimea
+  let pixelPos = 0;
+  function readBytes(n) {
+    const result = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      let byte = 0;
+      for (let bit = 7; bit >= 0; bit--) {
+        while ((pixelPos % 4) === 3) pixelPos++;
+        byte |= (pixels[pixelPos] & 1) << bit;
+        pixelPos++;
+      }
+      result[i] = byte;
+    }
+    return result;
+  }
+
+  const lenBytes = readBytes(4);
+  const totalLen = (lenBytes[0] << 24) | (lenBytes[1] << 16) | (lenBytes[2] << 8) | lenBytes[3];
+
+  // Verificare sanity
+  const maxPossible = Math.floor((canvas.width * canvas.height * 3) / 8) - 4;
+  if (totalLen <= 0 || totalLen > maxPossible) return null;
+
+  return readBytes(totalLen);
+}
+
+// ── DESCARCA IMAGINEA MODIFICATA ──
+function stegoDownload(canvas) {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'poza_tirea_' + Date.now() + '.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }, 'image/png');
+}
+
+// ── BUTON ASCUNDE ──
+async function stegoHide() {
+  if (!_stegoHideCanvas) return;
+  const msg = document.getElementById('stegoHideMsg').value.trim();
+  if (!msg) {
+    document.getElementById('stegoHideStatus').textContent = '⚠️ Scrie un mesaj!';
+    document.getElementById('stegoHideStatus').className = 'stego-status err';
+    return;
+  }
+  const pass = document.getElementById('stegoHidePass').value;
+  const btn = document.getElementById('stegoHideBtn');
+  const status = document.getElementById('stegoHideStatus');
+
+  btn.disabled = true;
+  status.textContent = '⏳ Se criptează...';
+  status.className = 'stego-status';
+
+  try {
+    // 1. Cripteaza cu AES-256
+    const encrypted = await stegoEncrypt(msg, pass);
+
+    // 2. Verifica capacitatea
+    const maxBytes = Math.floor((_stegoHideCanvas.width * _stegoHideCanvas.height * 3) / 8) - 4;
+    if (encrypted.length > maxBytes) {
+      status.textContent = '✗ Mesaj prea lung! Alege o poză mai mare.';
+      status.className = 'stego-status err';
+      btn.disabled = false;
+      return;
+    }
+
+    // 3. Embed LSB — lucreaza pe o copie
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = _stegoHideCanvas.width;
+    outCanvas.height = _stegoHideCanvas.height;
+    outCanvas.getContext('2d').drawImage(_stegoHideCanvas, 0, 0);
+    lsbEmbed(outCanvas, encrypted);
+
+    // 4. Descarca
+    stegoDownload(outCanvas);
+
+    status.textContent = '✓ Salvat! Trimite poza ca fișier (nu foto comprimat).';
+    status.className = 'stego-status';
+  } catch(e) {
+    status.textContent = '✗ Eroare: ' + e.message;
+    status.className = 'stego-status err';
+  }
+  btn.disabled = false;
+}
+
+// ── BUTON EXTRAGE ──
+async function stegoRead() {
+  if (!_stegoReadCanvas) return;
+  const pass = document.getElementById('stegoReadPass').value;
+  const btn = document.getElementById('stegoReadBtn');
+  const status = document.getElementById('stegoReadStatus');
+  const result = document.getElementById('stegoResult');
+
+  btn.disabled = true;
+  status.textContent = '⏳ Se extrage...';
+  status.className = 'stego-status';
+  result.style.display = 'none';
+
+  try {
+    // 1. Extrage bytes din LSB
+    const extracted = lsbExtract(_stegoReadCanvas);
+    if (!extracted) {
+      status.textContent = '✗ Nicio informație găsită în această poză.';
+      status.className = 'stego-status err';
+      btn.disabled = false;
+      return;
+    }
+
+    // 2. Decripteaza AES-256
+    const text = await stegoDecrypt(extracted, pass);
+
+    status.textContent = '✓ Mesaj extras și decriptat!';
+    status.className = 'stego-status';
+    result.textContent = text;
+    result.style.display = 'block';
+  } catch(e) {
+    status.textContent = '✗ Parolă greșită sau poză modificată/comprimată.';
+    status.className = 'stego-status err';
+  }
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════
+// STEGO ÎN CHAT — trimite/primești poze cu mesaj ascuns
+// ═══════════════════════════════════════════════════════
+
+let _csStegoCanvas = null;
+
+function openChatStegoSend() {
+  const ov = document.getElementById('chatStegoOv');
+  ov.style.display = 'flex';
+  _csStegoCanvas = null;
+  document.getElementById('csImgPreview').style.display = 'none';
+  document.getElementById('csImgPreview').src = '';
+  document.getElementById('csStegoMsg').value = '';
+  document.getElementById('csStegoStatus').textContent = '';
+  document.getElementById('csStegoCapacity').textContent = '';
+  document.getElementById('csStegoSendBtn').disabled = true;
+  document.getElementById('csStegoSendBtn').style.opacity = '0.4';
+  document.getElementById('csStegoSaveBtn').disabled = true;
+  document.getElementById('csStegoSaveBtn').style.opacity = '0.4';
+  document.getElementById('csStegoImgInput').value = '';
+}
+
+function closeChatStegoOv() {
+  document.getElementById('chatStegoOv').style.display = 'none';
+}
+
+function csStegoLoadImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      _csStegoCanvas = canvas;
+      const preview = document.getElementById('csImgPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      csStegoUpdateBtns();
+      csStegoCheckCap();
+      document.getElementById('csStegoStatus').textContent = '✓ ' + img.width + '×' + img.height + ' px';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function csStegoUpdateBtns() {
+  const ok = !!_csStegoCanvas;
+  document.getElementById('csStegoSendBtn').disabled = !ok;
+  document.getElementById('csStegoSendBtn').style.opacity = ok ? '1' : '0.4';
+  document.getElementById('csStegoSaveBtn').disabled = !ok;
+  document.getElementById('csStegoSaveBtn').style.opacity = ok ? '1' : '0.4';
+}
+
+function csStegoCheckCap() {
+  if (!_csStegoCanvas) return;
+  const maxBytes = Math.floor((_csStegoCanvas.width * _csStegoCanvas.height * 3) / 8) - 4;
+  const msgLen = document.getElementById('csStegoMsg').value.length;
+  const el = document.getElementById('csStegoCapacity');
+  const approxMax = Math.floor(maxBytes / 4);
+  if (msgLen === 0) {
+    el.style.color = '#666'; el.textContent = 'Max ~' + approxMax + ' caractere';
+  } else if (msgLen > approxMax) {
+    el.style.color = '#ef5350'; el.textContent = '⚠️ Prea lung! Max ~' + approxMax;
+  } else {
+    el.style.color = '#4caf50'; el.textContent = msgLen + ' / ' + approxMax;
+  }
+}
+
+async function csBuildStegoCanvas() {
+  const msg = document.getElementById('csStegoMsg').value.trim();
+  if (!msg) throw new Error('Mesajul e gol');
+  if (!_csStegoCanvas) throw new Error('Nicio poză selectată');
+  const encrypted = await stegoEncrypt(msg, '');
+  const maxBytes = Math.floor((_csStegoCanvas.width * _csStegoCanvas.height * 3) / 8) - 4;
+  if (encrypted.length > maxBytes) throw new Error('Mesaj prea lung pentru această poză');
+  const out = document.createElement('canvas');
+  out.width = _csStegoCanvas.width;
+  out.height = _csStegoCanvas.height;
+  out.getContext('2d').drawImage(_csStegoCanvas, 0, 0);
+  lsbEmbed(out, encrypted);
+  return out;
+}
+
+// Trimite direct în Tirea prin Firebase
+async function csStegoSendDirect() {
+  const btn = document.getElementById('csStegoSendBtn');
+  const status = document.getElementById('csStegoStatus');
+  btn.disabled = true; btn.style.opacity = '0.4';
+  status.textContent = '⏳ Se procesează...'; status.style.color = '#888';
+  try {
+    const out = await csBuildStegoCanvas();
+    // Redimensioneaza daca e prea mare pentru Firebase (max ~180KB)
+    let dataUrl = out.toDataURL('image/png');
+    if (dataUrl.length > 220000) {
+      const scale = Math.sqrt(180000 / dataUrl.length);
+      const c2 = document.createElement('canvas');
+      c2.width = Math.max(100, Math.floor(out.width * scale));
+      c2.height = Math.max(100, Math.floor(out.height * scale));
+      // Re-embed pe canvas mai mic
+      const msg = document.getElementById('csStegoMsg').value.trim();
+      const encrypted = await stegoEncrypt(msg, '');
+      c2.getContext('2d').drawImage(out, 0, 0, c2.width, c2.height);
+      lsbEmbed(c2, encrypted);
+      dataUrl = c2.toDataURL('image/png');
+    }
+    // Trimite in Firebase criptat
+    if (fbPeerId && fbChatRef) {
+      const encPayload = await encMsg('__STEGO__:' + dataUrl, fbPeerId);
+      fbChatRef.push({ uid: myUserId, enc: encPayload, ts: Date.now() });
+    }
+    csAddStegoMsgInChat(dataUrl, true);
+    status.textContent = '✓ Trimis!'; status.style.color = '#4caf50';
+    setTimeout(() => closeChatStegoOv(), 1000);
+  } catch(e) {
+    status.textContent = '✗ ' + e.message; status.style.color = '#ef5350';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+
+// Salveaza PNG pentru WhatsApp
+async function csStegoSaveWA() {
+  const btn = document.getElementById('csStegoSaveBtn');
+  const status = document.getElementById('csStegoStatus');
+  btn.disabled = true; btn.style.opacity = '0.4';
+  status.textContent = '⏳ Se pregătește...'; status.style.color = '#888';
+  try {
+    const out = await csBuildStegoCanvas();
+    out.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }, 'image/png');
+    status.textContent = '✓ Salvat! Trimite pe WhatsApp ca 📎 Document (nu foto).';
+    status.style.color = '#4caf50';
+    btn.disabled = false; btn.style.opacity = '1';
+  } catch(e) {
+    status.textContent = '✗ ' + e.message; status.style.color = '#ef5350';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+
+// Afiseaza poza stego în chat ca bubble
+function csAddStegoMsgInChat(dataUrl, isMe) {
+  const msgs = document.getElementById('messages');
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe ? 'me' : 'them');
+  const check = isMe ? (readReceipt ? ' ✓✓' : '') : '';
+  const uid = 'si_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+  const img = new Image();
+  img.id = uid;
+  img.src = dataUrl;
+  img.style.cssText = 'width:100%;max-width:200px;border-radius:12px;display:block;cursor:pointer;';
+  img.onclick = () => csExtractAndShow(uid);
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.cssText = 'padding:6px;';
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:10px;color:#888;text-align:center;margin-top:4px;';
+  hint.textContent = '🔐 poză criptată · apasă să citești';
+  bubble.appendChild(img);
+  bubble.appendChild(hint);
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  meta.textContent = t + ' 🔐' + check;
+  wrap.appendChild(bubble);
+  wrap.appendChild(meta);
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Extrage mesajul când se apasă pe poză
+async function csExtractAndShow(imgId) {
+  const imgEl = document.getElementById(imgId);
+  if (!imgEl) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = imgEl.naturalWidth;
+  canvas.height = imgEl.naturalHeight;
+  canvas.getContext('2d').drawImage(imgEl, 0, 0);
+  try {
+    const extracted = lsbExtract(canvas);
+    if (!extracted) { showStegoPopup('✗ Niciun mesaj găsit în această poză.', false); return; }
+    const text = await stegoDecrypt(extracted, '');
+    showStegoPopup(text, true);
+  } catch(e) {
+    showStegoPopup('✗ Nu s-a putut decripta.\nVerifică parola secretă din Tirea.', false);
+  }
+}
+
+// Popup elegant pentru mesajul decriptat
+function showStegoPopup(text, success) {
+  const existing = document.getElementById('stegoPopup');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'stegoPopup';
+  el.style.cssText = 'position:absolute;bottom:90px;left:14px;right:14px;background:#1a1a1a;'
+    + 'border:1px solid ' + (success ? '#4caf50' : '#ef5350') + ';border-radius:16px;padding:16px;'
+    + 'z-index:500;font-size:14px;color:#f0f0f0;line-height:1.6;max-height:180px;overflow-y:auto;'
+    + 'box-shadow:0 8px 32px rgba(0,0,0,0.6);';
+  el.innerHTML = '<div style="font-size:10px;color:' + (success ? '#4caf50' : '#ef5350') + ';'
+    + 'margin-bottom:8px;font-weight:700;letter-spacing:1px;">'
+    + (success ? '🔓 MESAJ DECRIPTAT' : '⚠️ EROARE') + '</div>'
+    + '<div style="word-break:break-word;">' + esc(text) + '</div>'
+    + '<button onclick="document.getElementById(\'stegoPopup\').remove()" '
+    + 'style="margin-top:12px;background:#333;border:none;color:#888;padding:6px;'
+    + 'border-radius:8px;cursor:pointer;font-size:12px;width:100%;">✕ Închide</button>';
+  document.getElementById('chat-app').appendChild(el);
+  setTimeout(() => { if(el.parentNode) el.remove(); }, 20000);
+}
+
+// Primeste poza din fisier (WhatsApp) — butonul 📂
+function chatStegoReceive(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      // Afiseaza poza in chat
+      csAddStegoMsgInChat(e.target.result, false);
+      // Incearca sa extraga automat
+      try {
+        const extracted = lsbExtract(canvas);
+        if (!extracted) {
+          showStegoPopup('✗ Niciun mesaj ascuns găsit.\n\n⚠️ Dacă a fost trimisă pe WhatsApp ca foto, compresia a distrus mesajul. Cere-i să trimită ca 📎 Document.', false);
+          return;
+        }
+        const text = await stegoDecrypt(extracted, '');
+        showStegoPopup(text, true);
+      } catch(ex) {
+        showStegoPopup('✗ Nu s-a putut decripta.\nVerifică parola secretă din Tirea — trebuie să fie aceeași la amândoi.', false);
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 </script>
