@@ -887,10 +887,10 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
           color:#1a1a1a;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.4;">
           ▶ Trimite în Tirea
         </button>
-        <button id="csStegoSaveBtn" onclick="csStegoSaveWA()" disabled
-          style="width:100%;padding:13px;background:#3d3d3d;border:0.5px solid #555;border-radius:14px;
-          color:#f0f0f0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;opacity:0.4;">
-          💾 Salvează pentru WhatsApp
+        <button id="csStegoSaveBtn" onclick="csStegoShareWA()" disabled
+          style="width:100%;padding:13px;background:#25D366;border:none;border-radius:14px;
+          color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;opacity:0.4;">
+          📤 Trimite pe WhatsApp
         </button>
         <div id="csStegoStatus" style="font-size:12px;text-align:center;min-height:18px;color:#4caf50;font-weight:600;"></div>
       </div>
@@ -3049,23 +3049,52 @@ async function csStegoSendDirect() {
   }
 }
 
-// Salveaza PNG pentru WhatsApp
-async function csStegoSaveWA() {
+// Partajare nativa (Web Share API) — deschide meniul telefonului
+async function csStegoShareWA() {
   const btn = document.getElementById('csStegoSaveBtn');
   const status = document.getElementById('csStegoStatus');
   btn.disabled = true; btn.style.opacity = '0.4';
   status.textContent = '⏳ Se pregătește...'; status.style.color = '#888';
   try {
     const out = await csBuildStegoCanvas();
-    out.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    out.toBlob(async blob => {
+      const file = new File([blob], 'poza_' + Date.now() + '.png', { type: 'image/png' });
+      // Incearca Web Share API cu fisier (Android Chrome, iOS Safari)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Poză',
+            text: ''
+          });
+          status.textContent = '✓ Partajat!'; status.style.color = '#4caf50';
+        } catch(shareErr) {
+          // Utilizatorul a anulat — nu e eroare
+          status.textContent = ''; 
+        }
+      } else if (navigator.share) {
+        // Share fara fisier — fallback cu link
+        const url = URL.createObjectURL(blob);
+        // Salveaza automat + deschide share
+        const a = document.createElement('a');
+        a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
+        setTimeout(() => {
+          navigator.share({ title: 'Poză', text: '📎 Trimite fișierul salvat pe WhatsApp ca Document.' });
+          URL.revokeObjectURL(url);
+        }, 500);
+        status.textContent = '✓ Salvat! Trimite ca 📎 Document pe WhatsApp.';
+        status.style.color = '#4caf50';
+      } else {
+        // Desktop sau browser fara Share API — descarca direct
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        status.textContent = '✓ Salvat! Trimite ca 📎 Document pe WhatsApp.';
+        status.style.color = '#4caf50';
+      }
+      btn.disabled = false; btn.style.opacity = '1';
     }, 'image/png');
-    status.textContent = '✓ Salvat! Trimite pe WhatsApp ca 📎 Document (nu foto).';
-    status.style.color = '#4caf50';
-    btn.disabled = false; btn.style.opacity = '1';
   } catch(e) {
     status.textContent = '✗ ' + e.message; status.style.color = '#ef5350';
     btn.disabled = false; btn.style.opacity = '1';
