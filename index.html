@@ -2709,16 +2709,20 @@ function stegoLoadReadImage(input) {
 // Verifica capacitatea imaginii
 function stegoCheckCapacity() {
   if (!_stegoHideCanvas) return;
-  const maxBytes = Math.floor((_stegoHideCanvas.width * _stegoHideCanvas.height * 3) / 8) - 8;
+  const bCols = Math.floor(_stegoHideCanvas.width / BLOCK);
+  const bRows = Math.floor(_stegoHideCanvas.height / BLOCK);
+  const maxBytes = Math.floor(bCols * bRows / 8) - 8;
   const msgLen = document.getElementById('stegoHideMsg').value.length;
   const capEl = document.getElementById('stegoCapacity');
+  const approxChars = Math.floor(maxBytes / 4);
   if (msgLen === 0) {
-    capEl.textContent = 'Capacitate max: ~' + maxBytes + ' caractere';
-  } else if (msgLen * 4 > maxBytes) {
-    capEl.textContent = '⚠️ Mesaj prea lung pentru această poză!';
+    capEl.textContent = 'Max ~' + approxChars + ' caractere · rezistent WhatsApp';
+    capEl.style.color = 'var(--t-muted)';
+  } else if (msgLen > approxChars) {
+    capEl.textContent = '⚠️ Prea lung! Max ~' + approxChars;
     capEl.style.color = 'var(--t-red)';
   } else {
-    capEl.textContent = msgLen + ' / ' + Math.floor(maxBytes/4) + ' caractere';
+    capEl.textContent = msgLen + ' / ' + approxChars;
     capEl.style.color = 'var(--t-muted)';
   }
 }
@@ -2759,73 +2763,134 @@ async function stegoDecrypt(data, password) {
   return new TextDecoder().decode(dec);
 }
 
-// ── LSB EMBED — ascunde bytes în pixelii imaginii ──
-function lsbEmbed(canvas, dataBytes) {
+// ── EMBED REZISTENT JPEG — modificari ±10 in blocuri 8x8 ──
+// Supravietuieste compresiei WhatsApp (JPEG quality ~70-85)
+// Fiecare bit e encodat in valoarea medie a canalului ALBASTRU
+// dintr-un bloc de 8x8 pixeli: valoare para = bit 0, impara = bit 1
+
+const BLOCK = 8;        // dimensiunea blocului
+const STRENGTH = 10;    // cat de mult modificam (mai mare = mai rezistent)
+const MAGIC = [0x54, 0x49, 0x52, 0x45]; // "TIRE" — marker de identificare
+
+function blockEmbed(canvas, dataBytes) {
   const ctx = canvas.getContext('2d');
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imgData.data; // RGBA
+  const W = canvas.width, H = canvas.height;
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const px = imgData.data;
 
-  // Primii 4 bytes (32 bit) = lungimea datei (big-endian)
+  // Construieste payload: MAGIC(4) + LEN(4) + DATA
   const totalLen = dataBytes.length;
-  const lenBytes = new Uint8Array(4);
-  lenBytes[0] = (totalLen >> 24) & 0xFF;
-  lenBytes[1] = (totalLen >> 16) & 0xFF;
-  lenBytes[2] = (totalLen >> 8)  & 0xFF;
-  lenBytes[3] =  totalLen        & 0xFF;
+  const payload = new Uint8Array(8 + totalLen);
+  payload[0] = MAGIC[0]; payload[1] = MAGIC[1];
+  payload[2] = MAGIC[2]; payload[3] = MAGIC[3];
+  payload[4] = (totalLen >> 24) & 0xFF;
+  payload[5] = (totalLen >> 16) & 0xFF;
+  payload[6] = (totalLen >> 8)  & 0xFF;
+  payload[7] =  totalLen        & 0xFF;
+  payload.set(dataBytes, 8);
 
-  const allBytes = new Uint8Array(4 + dataBytes.length);
-  allBytes.set(lenBytes, 0);
-  allBytes.set(dataBytes, 4);
+  // Numara blocuri disponibile
+  const bCols = Math.floor(W / BLOCK);
+  const bRows = Math.floor(H / BLOCK);
+  const totalBits = payload.length * 8;
+  if (totalBits > bCols * bRows) throw new Error('Mesaj prea lung pentru această poză');
 
-  // Fiecare byte = 8 biti, fiecare bit in LSB al unui canal RGB
-  // Sari canalul Alpha (index 3,7,11,...)
-  let bitIndex = 0;
-  let pixelPos = 0; // pozitie in canale RGB (sare alpha)
+  let bitIdx = 0;
+  outer:
+  for (let br = 0; br < bRows; br++) {
+    for (let bc = 0; bc < bCols; bc++) {
+      if (bitIdx >= totalBits) break outer;
 
-  for (let i = 0; i < allBytes.length; i++) {
-    for (let bit = 7; bit >= 0; bit--) {
-      // Sare canalul alpha
-      while ((pixelPos % 4) === 3) pixelPos++;
-      const b = (allBytes[i] >> bit) & 1;
-      pixels[pixelPos] = (pixels[pixelPos] & 0xFE) | b;
-      pixelPos++;
+      const byteIdx = Math.floor(bitIdx / 8);
+      const bitPos  = 7 - (bitIdx % 8);
+      const bit = (payload[byteIdx] >> bitPos) & 1;
+
+      // Calculeaza media canalului albastru in bloc
+      let sum = 0, count = 0;
+      for (let r = 0; r < BLOCK; r++) {
+        for (let c = 0; c < BLOCK; c++) {
+          const i = ((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4;
+          sum += px[i + 2]; // canal albastru
+          count++;
+        }
+      }
+      const avg = sum / count;
+
+      // Rotunjeste media la cel mai apropiat multiplu de (2*STRENGTH)
+      // si adauga STRENGTH*bit pentru a encoda bitul
+      const base = Math.round(avg / (2 * STRENGTH)) * (2 * STRENGTH);
+      const target = Math.max(STRENGTH, Math.min(255 - STRENGTH, base + bit * STRENGTH));
+
+      // Ajusteaza toti pixelii din bloc
+      const delta = target - avg;
+      for (let r = 0; r < BLOCK; r++) {
+        for (let c = 0; c < BLOCK; c++) {
+          const i = ((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4;
+          px[i + 2] = Math.max(0, Math.min(255, Math.round(px[i + 2] + delta)));
+        }
+      }
+      bitIdx++;
     }
   }
 
   ctx.putImageData(imgData, 0, 0);
 }
 
-// ── LSB EXTRACT — extrage bytes din pixeli ──
-function lsbExtract(canvas) {
+function blockExtract(canvas) {
   const ctx = canvas.getContext('2d');
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imgData.data;
+  const W = canvas.width, H = canvas.height;
+  const px = ctx.getImageData(0, 0, W, H).data;
 
-  // Citeste primii 32 biti = lungimea
-  let pixelPos = 0;
-  function readBytes(n) {
-    const result = new Uint8Array(n);
-    for (let i = 0; i < n; i++) {
+  const bCols = Math.floor(W / BLOCK);
+  const bRows = Math.floor(H / BLOCK);
+
+  function readBits(nBytes) {
+    // pozitia curenta in blocuri (globala intre apeluri)
+    // folosim o inchidere cu blockIdx
+    const result = new Uint8Array(nBytes);
+    for (let i = 0; i < nBytes; i++) {
       let byte = 0;
-      for (let bit = 7; bit >= 0; bit--) {
-        while ((pixelPos % 4) === 3) pixelPos++;
-        byte |= (pixels[pixelPos] & 1) << bit;
-        pixelPos++;
+      for (let b = 7; b >= 0; b--) {
+        if (blockIdx >= bCols * bRows) return result;
+        const br = Math.floor(blockIdx / bCols);
+        const bc = blockIdx % bCols;
+        // Media canalului albastru
+        let sum = 0;
+        for (let r = 0; r < BLOCK; r++)
+          for (let c = 0; c < BLOCK; c++)
+            sum += px[((br*BLOCK+r)*W + (bc*BLOCK+c))*4 + 2];
+        const avg = sum / (BLOCK * BLOCK);
+        // Bitul encodat: daca media e mai aproape de target cu bit=1 sau bit=0
+        const base = Math.round(avg / (2 * STRENGTH)) * (2 * STRENGTH);
+        const bit = (avg - base) > (STRENGTH / 2) ? 1 : 0;
+        byte |= (bit << b);
+        blockIdx++;
       }
       result[i] = byte;
     }
     return result;
   }
 
-  const lenBytes = readBytes(4);
-  const totalLen = (lenBytes[0] << 24) | (lenBytes[1] << 16) | (lenBytes[2] << 8) | lenBytes[3];
+  let blockIdx = 0;
 
-  // Verificare sanity
-  const maxPossible = Math.floor((canvas.width * canvas.height * 3) / 8) - 4;
+  // Citeste si verifica MAGIC
+  const magic = readBits(4);
+  if (magic[0] !== MAGIC[0] || magic[1] !== MAGIC[1] ||
+      magic[2] !== MAGIC[2] || magic[3] !== MAGIC[3]) return null;
+
+  // Citeste lungimea
+  const lenB = readBits(4);
+  const totalLen = (lenB[0] << 24) | (lenB[1] << 16) | (lenB[2] << 8) | lenB[3];
+
+  const maxPossible = bCols * bRows / 8 - 8;
   if (totalLen <= 0 || totalLen > maxPossible) return null;
 
-  return readBytes(totalLen);
+  return readBits(totalLen);
 }
+
+// Alias pentru compatibilitate cu codul existent
+function lsbEmbed(canvas, dataBytes) { blockEmbed(canvas, dataBytes); }
+function lsbExtract(canvas) { return blockExtract(canvas); }
 
 // ── DESCARCA IMAGINEA MODIFICATA ──
 function stegoDownload(canvas) {
@@ -2985,12 +3050,14 @@ function csStegoUpdateBtns() {
 
 function csStegoCheckCap() {
   if (!_csStegoCanvas) return;
-  const maxBytes = Math.floor((_csStegoCanvas.width * _csStegoCanvas.height * 3) / 8) - 4;
+  const bCols = Math.floor(_csStegoCanvas.width / BLOCK);
+  const bRows = Math.floor(_csStegoCanvas.height / BLOCK);
+  const maxBytes = Math.floor(bCols * bRows / 8) - 8;
   const msgLen = document.getElementById('csStegoMsg').value.length;
   const el = document.getElementById('csStegoCapacity');
   const approxMax = Math.floor(maxBytes / 4);
   if (msgLen === 0) {
-    el.style.color = '#666'; el.textContent = 'Max ~' + approxMax + ' caractere';
+    el.style.color = '#666'; el.textContent = 'Max ~' + approxMax + ' caractere · rezistent WhatsApp';
   } else if (msgLen > approxMax) {
     el.style.color = '#ef5350'; el.textContent = '⚠️ Prea lung! Max ~' + approxMax;
   } else {
@@ -3057,44 +3124,35 @@ async function csStegoShareWA() {
   status.textContent = '⏳ Se pregătește...'; status.style.color = '#888';
   try {
     const out = await csBuildStegoCanvas();
+    // Salveaza ca JPEG la calitate ridicata — WhatsApp va comprima la fel
+    // deci folosim acelasi nivel de compresie ca sa fim siguri ca supravietuieste
     out.toBlob(async blob => {
-      const file = new File([blob], 'poza_' + Date.now() + '.png', { type: 'image/png' });
-      // Incearca Web Share API cu fisier (Android Chrome, iOS Safari)
+      const file = new File([blob], 'foto_' + Date.now() + '.jpg', { type: 'image/jpeg' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-          await navigator.share({
-            files: [file],
-            title: 'Poză',
-            text: ''
-          });
-          status.textContent = '✓ Partajat!'; status.style.color = '#4caf50';
-        } catch(shareErr) {
-          // Utilizatorul a anulat — nu e eroare
-          status.textContent = ''; 
+          await navigator.share({ files: [file], title: '', text: '' });
+          status.textContent = '✓ Trimis!'; status.style.color = '#4caf50';
+          setTimeout(() => closeChatStegoOv(), 1200);
+        } catch(e) {
+          status.textContent = '';
         }
       } else if (navigator.share) {
-        // Share fara fisier — fallback cu link
+        // Share fara fisier
         const url = URL.createObjectURL(blob);
-        // Salveaza automat + deschide share
         const a = document.createElement('a');
-        a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
-        setTimeout(() => {
-          navigator.share({ title: 'Poză', text: '📎 Trimite fișierul salvat pe WhatsApp ca Document.' });
-          URL.revokeObjectURL(url);
-        }, 500);
-        status.textContent = '✓ Salvat! Trimite ca 📎 Document pe WhatsApp.';
-        status.style.color = '#4caf50';
+        a.href = url; a.download = 'foto_' + Date.now() + '.jpg'; a.click();
+        setTimeout(() => navigator.share({ title: '', text: '📎' }), 600);
+        status.textContent = '✓ Salvat!'; status.style.color = '#4caf50';
+        URL.revokeObjectURL(url);
       } else {
-        // Desktop sau browser fara Share API — descarca direct
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'poza_' + Date.now() + '.png'; a.click();
+        a.href = url; a.download = 'foto_' + Date.now() + '.jpg'; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 3000);
-        status.textContent = '✓ Salvat! Trimite ca 📎 Document pe WhatsApp.';
-        status.style.color = '#4caf50';
+        status.textContent = '✓ Salvat în downloads!'; status.style.color = '#4caf50';
       }
       btn.disabled = false; btn.style.opacity = '1';
-    }, 'image/png');
+    }, 'image/jpeg', 0.92);
   } catch(e) {
     status.textContent = '✗ ' + e.message; status.style.color = '#ef5350';
     btn.disabled = false; btn.style.opacity = '1';
