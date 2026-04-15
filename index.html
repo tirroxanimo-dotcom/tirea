@@ -513,7 +513,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .stego-info-icon { font-size:18px;flex-shrink:0; }
 .stego-pass-input { width:100%;padding:13px 14px;background:var(--t-surface);border:0.5px solid var(--t-border);
   border-radius:14px;color:var(--t-text);font-size:15px;font-family:monospace;outline:none;
-  letter-spacing:2px; }
+  letter-spacing:2px;box-sizing:border-box;display:block; }
 .stego-pass-input:focus { border-color:var(--t-primary); }
 .stego-pass-input::placeholder { letter-spacing:0;font-size:13px;color:var(--t-muted); }
 .stego-capacity { font-size:10px;color:var(--t-muted);text-align:right;margin-top:-6px; }
@@ -2735,7 +2735,9 @@ function stegoCheckCapacity() {
 
 // ── DERIVARE CHEIE AES DIN PAROLA ──
 async function stegoGetKey(password) {
-  const base = (sharedSecret || '') + (password || '') + 'stego_tirea_v1';
+  // password e parola introdusa de user (pentru stego standalone)
+  // sau '__chat__' pentru stego in chat (criptat deja prin Firebase)
+  const base = (password || '') + 'stego_tirea_v1';
   const keyMaterial = await crypto.subtle.importKey(
     'raw', new TextEncoder().encode(base),
     { name: 'PBKDF2' }, false, ['deriveKey']
@@ -3061,7 +3063,7 @@ async function csBuildStegoCanvas() {
   const msg = document.getElementById('csStegoMsg').value.trim();
   if (!msg) throw new Error('Mesajul e gol');
   if (!_csStegoCanvas) throw new Error('Nicio poză selectată');
-  const encrypted = await stegoEncrypt(msg, '');
+  const encrypted = await stegoEncrypt(msg, '__chat__');
   const maxBytes = Math.floor((_csStegoCanvas.width * _csStegoCanvas.height * 3) / 8) - 4;
   if (encrypted.length > maxBytes) throw new Error('Mesaj prea lung pentru această poză');
   const out = document.createElement('canvas');
@@ -3140,7 +3142,7 @@ async function csExtractAndShow(imgId) {
   try {
     const extracted = lsbExtract(canvas);
     if (!extracted) { showStegoPopup('✗ Niciun mesaj găsit în această poză.', false); return; }
-    const text = await stegoDecrypt(extracted, '');
+    const text = await stegoDecrypt(extracted, '__chat__');
     showStegoPopup(text, true);
   } catch(e) {
     showStegoPopup('✗ Nu s-a putut decripta.\nVerifică parola secretă din Tirea.', false);
@@ -3188,7 +3190,7 @@ function chatStegoReceive(input) {
           showStegoPopup('✗ Niciun mesaj ascuns găsit.\n\n⚠️ Dacă poza a fost comprimată (ex: salvată după trimitere), mesajul a putut fi distrus. Trimite ca 📎 Document.', false);
           return;
         }
-        const text = await stegoDecrypt(extracted, '');
+        const text = await stegoDecrypt(extracted, '__chat__');
         showStegoPopup(text, true);
       } catch(ex) {
         showStegoPopup('✗ Nu s-a putut decripta.\nVerifică parola secretă din Tirea — trebuie să fie aceeași la amândoi.', false);
