@@ -3012,24 +3012,18 @@ function csStegoLoadImg(input) {
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
-      // Limiteaza dimensiunea la max 600px pe latura mai mare (pentru Firebase)
-      const MAX = 600;
-      let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
-      }
+      // Folosim dimensiunile originale — NU scalăm (scalarea strică pixelii LSB)
       const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
       _csStegoCanvas = canvas;
       const preview = document.getElementById('csImgPreview');
       preview.src = e.target.result;
       preview.style.display = 'block';
       csStegoUpdateBtns();
       csStegoCheckCap();
-      document.getElementById('csStegoStatus').textContent = '✓ ' + w + '×' + h + ' px';
+      document.getElementById('csStegoStatus').textContent = '✓ ' + img.width + '×' + img.height + ' px';
     };
     img.src = e.target.result;
   };
@@ -3063,13 +3057,26 @@ async function csBuildStegoCanvas() {
   const msg = document.getElementById('csStegoMsg').value.trim();
   if (!msg) throw new Error('Mesajul e gol');
   if (!_csStegoCanvas) throw new Error('Nicio poză selectată');
-  const encrypted = await stegoEncrypt(msg, '__chat__');
-  const maxBytes = Math.floor((_csStegoCanvas.width * _csStegoCanvas.height * 3) / 8) - 4;
-  if (encrypted.length > maxBytes) throw new Error('Mesaj prea lung pentru această poză');
+
+  // Asigura dimensiuni multiplu de BLOCK=8 (fara interpolare pe canvas final)
+  let w = Math.floor(_csStegoCanvas.width / BLOCK) * BLOCK;
+  let h = Math.floor(_csStegoCanvas.height / BLOCK) * BLOCK;
+  // Limiteaza la max 800px pentru Firebase dar pastreaza multiplu de 8
+  const MAX = 800;
+  if (w > MAX) { w = Math.floor(MAX / BLOCK) * BLOCK; }
+  if (h > MAX) { h = Math.floor(MAX / BLOCK) * BLOCK; }
+
   const out = document.createElement('canvas');
-  out.width = _csStegoCanvas.width;
-  out.height = _csStegoCanvas.height;
-  out.getContext('2d').drawImage(_csStegoCanvas, 0, 0);
+  out.width = w;
+  out.height = h;
+  // Dezactiveaza interpolarea
+  const ctx = out.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(_csStegoCanvas, 0, 0, w, h);
+
+  const encrypted = await stegoEncrypt(msg, '__chat__');
+  const maxBytes = Math.floor((w * h * 3) / 8) - 4;
+  if (encrypted.length > maxBytes) throw new Error('Mesaj prea lung pentru această poză');
   lsbEmbed(out, encrypted);
   return out;
 }
