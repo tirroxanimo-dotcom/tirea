@@ -3013,8 +3013,6 @@ function openChatStegoSend() {
   document.getElementById('csStegoCapacity').textContent = '';
   document.getElementById('csStegoSendBtn').disabled = true;
   document.getElementById('csStegoSendBtn').style.opacity = '0.4';
-  document.getElementById('csStegoSaveBtn').disabled = true;
-  document.getElementById('csStegoSaveBtn').style.opacity = '0.4';
   document.getElementById('csStegoImgInput').value = '';
 }
 
@@ -3120,48 +3118,7 @@ async function csStegoSendDirect() {
   }
 }
 
-// Partajare nativa (Web Share API) — deschide meniul telefonului
-async function csStegoShareWA() {
-  const btn = document.getElementById('csStegoSaveBtn');
-  const status = document.getElementById('csStegoStatus');
-  btn.disabled = true; btn.style.opacity = '0.4';
-  status.textContent = '⏳ Se pregătește...'; status.style.color = '#888';
-  try {
-    const out = await csBuildStegoCanvas();
-    // Salveaza ca JPEG la calitate ridicata — WhatsApp va comprima la fel
-    // deci folosim acelasi nivel de compresie ca sa fim siguri ca supravietuieste
-    out.toBlob(async blob => {
-      const file = new File([blob], 'foto_' + Date.now() + '.jpg', { type: 'image/jpeg' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: '', text: '' });
-          status.textContent = '✓ Trimis!'; status.style.color = '#4caf50';
-          setTimeout(() => closeChatStegoOv(), 1200);
-        } catch(e) {
-          status.textContent = '';
-        }
-      } else if (navigator.share) {
-        // Share fara fisier
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'foto_' + Date.now() + '.jpg'; a.click();
-        setTimeout(() => navigator.share({ title: '', text: '📎' }), 600);
-        status.textContent = '✓ Salvat!'; status.style.color = '#4caf50';
-        URL.revokeObjectURL(url);
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'foto_' + Date.now() + '.jpg'; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-        status.textContent = '✓ Salvat în downloads!'; status.style.color = '#4caf50';
-      }
-      btn.disabled = false; btn.style.opacity = '1';
-    }, 'image/jpeg', 0.92);
-  } catch(e) {
-    status.textContent = '✗ ' + e.message; status.style.color = '#ef5350';
-    btn.disabled = false; btn.style.opacity = '1';
-  }
-}
+
 
 // Afiseaza poza stego în chat ca bubble
 function csAddStegoMsgInChat(dataUrl, isMe) {
