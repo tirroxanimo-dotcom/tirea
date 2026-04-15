@@ -2795,48 +2795,38 @@ function blockEmbed(canvas, dataBytes) {
   payload[7] =  totalLen        & 0xFF;
   payload.set(dataBytes, 8);
 
-  // Numara blocuri disponibile
   const bCols = Math.floor(W / BLOCK);
   const bRows = Math.floor(H / BLOCK);
-  const totalBits = payload.length * 8;
-  if (totalBits > bCols * bRows) throw new Error('Mesaj prea lung pentru această poză');
+  if (payload.length * 8 > bCols * bRows) throw new Error('Mesaj prea lung pentru această poză');
 
-  let bitIdx = 0;
-  outer:
-  for (let br = 0; br < bRows; br++) {
-    for (let bc = 0; bc < bCols; bc++) {
-      if (bitIdx >= totalBits) break outer;
+  let blockIdx = 0;
+  for (let bi = 0; bi < payload.length * 8; bi++) {
+    const byteIdx = Math.floor(bi / 8);
+    const bitPos  = 7 - (bi % 8);
+    const bit = (payload[byteIdx] >> bitPos) & 1;
 
-      const byteIdx = Math.floor(bitIdx / 8);
-      const bitPos  = 7 - (bitIdx % 8);
-      const bit = (payload[byteIdx] >> bitPos) & 1;
+    const br = Math.floor(blockIdx / bCols);
+    const bc = blockIdx % bCols;
 
-      // Calculeaza media canalului albastru in bloc
-      let sum = 0, count = 0;
-      for (let r = 0; r < BLOCK; r++) {
-        for (let c = 0; c < BLOCK; c++) {
-          const i = ((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4;
-          sum += px[i + 2]; // canal albastru
-          count++;
-        }
+    // Calculeaza media canalului albastru in bloc
+    let sum = 0;
+    for (let r = 0; r < BLOCK; r++)
+      for (let c = 0; c < BLOCK; c++)
+        sum += px[((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4 + 2];
+    const avg = sum / (BLOCK * BLOCK);
+
+    // Seteaza media la par(0) sau impar(1) * STRENGTH
+    const base = Math.floor(avg / (2 * STRENGTH)) * (2 * STRENGTH);
+    const rawTarget = base + (bit ? STRENGTH * 1.5 : STRENGTH * 0.5);
+    const target = Math.max(STRENGTH, Math.min(255 - STRENGTH, rawTarget));
+    const delta = target - avg;
+
+    for (let r = 0; r < BLOCK; r++)
+      for (let c = 0; c < BLOCK; c++) {
+        const i = ((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4;
+        px[i + 2] = Math.max(0, Math.min(255, Math.round(px[i + 2] + delta)));
       }
-      const avg = sum / count;
-
-      // Rotunjeste media la cel mai apropiat multiplu de (2*STRENGTH)
-      // si adauga STRENGTH*bit pentru a encoda bitul
-      const base = Math.round(avg / (2 * STRENGTH)) * (2 * STRENGTH);
-      const target = Math.max(STRENGTH, Math.min(255 - STRENGTH, base + bit * STRENGTH));
-
-      // Ajusteaza toti pixelii din bloc
-      const delta = target - avg;
-      for (let r = 0; r < BLOCK; r++) {
-        for (let c = 0; c < BLOCK; c++) {
-          const i = ((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4;
-          px[i + 2] = Math.max(0, Math.min(255, Math.round(px[i + 2] + delta)));
-        }
-      }
-      bitIdx++;
-    }
+    blockIdx++;
   }
 
   ctx.putImageData(imgData, 0, 0);
@@ -2849,49 +2839,42 @@ function blockExtract(canvas) {
 
   const bCols = Math.floor(W / BLOCK);
   const bRows = Math.floor(H / BLOCK);
+  let blockIdx = 0;
 
-  function readBits(nBytes) {
-    // pozitia curenta in blocuri (globala intre apeluri)
-    // folosim o inchidere cu blockIdx
-    const result = new Uint8Array(nBytes);
-    for (let i = 0; i < nBytes; i++) {
+  function readBytes(n) {
+    const out = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
       let byte = 0;
       for (let b = 7; b >= 0; b--) {
-        if (blockIdx >= bCols * bRows) return result;
+        if (blockIdx >= bCols * bRows) return out;
         const br = Math.floor(blockIdx / bCols);
         const bc = blockIdx % bCols;
-        // Media canalului albastru
         let sum = 0;
         for (let r = 0; r < BLOCK; r++)
           for (let c = 0; c < BLOCK; c++)
-            sum += px[((br*BLOCK+r)*W + (bc*BLOCK+c))*4 + 2];
+            sum += px[((br * BLOCK + r) * W + (bc * BLOCK + c)) * 4 + 2];
         const avg = sum / (BLOCK * BLOCK);
-        // Bitul encodat: daca media e mai aproape de target cu bit=1 sau bit=0
-        const base = Math.round(avg / (2 * STRENGTH)) * (2 * STRENGTH);
-        const bit = (avg - base) > (STRENGTH / 2) ? 1 : 0;
+        const base = Math.floor(avg / (2 * STRENGTH)) * (2 * STRENGTH);
+        const bit = (avg - base) > STRENGTH ? 1 : 0;
         byte |= (bit << b);
         blockIdx++;
       }
-      result[i] = byte;
+      out[i] = byte;
     }
-    return result;
+    return out;
   }
 
-  let blockIdx = 0;
-
   // Citeste si verifica MAGIC
-  const magic = readBits(4);
+  const magic = readBytes(4);
   if (magic[0] !== MAGIC[0] || magic[1] !== MAGIC[1] ||
       magic[2] !== MAGIC[2] || magic[3] !== MAGIC[3]) return null;
 
   // Citeste lungimea
-  const lenB = readBits(4);
-  const totalLen = (lenB[0] << 24) | (lenB[1] << 16) | (lenB[2] << 8) | lenB[3];
+  const lb = readBytes(4);
+  const totalLen = (lb[0] << 24) | (lb[1] << 16) | (lb[2] << 8) | lb[3];
+  if (totalLen <= 0 || totalLen > 100000) return null;
 
-  const maxPossible = bCols * bRows / 8 - 8;
-  if (totalLen <= 0 || totalLen > maxPossible) return null;
-
-  return readBits(totalLen);
+  return readBytes(totalLen);
 }
 
 // Alias pentru compatibilitate cu codul existent
@@ -3027,17 +3010,24 @@ function csStegoLoadImg(input) {
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
+      // Limiteaza dimensiunea la max 600px pe latura mai mare (pentru Firebase)
+      const MAX = 600;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       _csStegoCanvas = canvas;
       const preview = document.getElementById('csImgPreview');
       preview.src = e.target.result;
       preview.style.display = 'block';
       csStegoUpdateBtns();
       csStegoCheckCap();
-      document.getElementById('csStegoStatus').textContent = '✓ ' + img.width + '×' + img.height + ' px';
+      document.getElementById('csStegoStatus').textContent = '✓ ' + w + '×' + h + ' px';
     };
     img.src = e.target.result;
   };
@@ -3090,20 +3080,8 @@ async function csStegoSendDirect() {
   status.textContent = '⏳ Se procesează...'; status.style.color = '#888';
   try {
     const out = await csBuildStegoCanvas();
-    // Redimensioneaza daca e prea mare pentru Firebase (max ~180KB)
-    let dataUrl = out.toDataURL('image/png');
-    if (dataUrl.length > 220000) {
-      const scale = Math.sqrt(180000 / dataUrl.length);
-      const c2 = document.createElement('canvas');
-      c2.width = Math.max(100, Math.floor(out.width * scale));
-      c2.height = Math.max(100, Math.floor(out.height * scale));
-      // Re-embed pe canvas mai mic
-      const msg = document.getElementById('csStegoMsg').value.trim();
-      const encrypted = await stegoEncrypt(msg, '');
-      c2.getContext('2d').drawImage(out, 0, 0, c2.width, c2.height);
-      lsbEmbed(c2, encrypted);
-      dataUrl = c2.toDataURL('image/png');
-    }
+    // Trimite direct ca PNG — mesajul LSB este intact
+    const dataUrl = out.toDataURL('image/png');
     // Trimite in Firebase criptat
     if (fbPeerId && fbChatRef) {
       const encPayload = await encMsg('__STEGO__:' + dataUrl, fbPeerId);
