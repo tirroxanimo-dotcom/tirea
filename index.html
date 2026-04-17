@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0048)file:///C:/Users/Acer/Downloads/index%20(4).html -->
+<!-- saved from url=(0048)file:///C:/Users/Acer/Downloads/index%20(8).html -->
 <html lang="ro"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -525,7 +525,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 <div class="phone" style="transform: scale(0.6); margin-top: -156px; margin-bottom: -156px;"><div class="screen">
 
   <div class="status-bar sb-dark" id="sb">
-    <div class="status-time" id="stime">21:24</div>
+    <div class="status-time" id="stime">21:50</div>
     <div class="status-icons"><span>📶</span><span>🔋</span></div>
   </div>
 
@@ -2210,41 +2210,22 @@ function acceptPIN() {
   const entered = document.getElementById('afPinInput').value;
   const st = document.getElementById('afPinStatus');
   if (entered.length !== 6) {
-    st.textContent = '✗ Introdu 6 cifre'; st.style.color = 'var(--t-red)';
+    st.textContent = '✗ PIN invalid'; st.style.color = 'var(--t-red)';
+    document.getElementById('afPinInput').value = '';
+    document.getElementById('afPinBtn').disabled = true;
     return;
   }
-  st.textContent = '⏳ Se caută utilizatorul...'; st.style.color = 'var(--t-green)';
-  // Caută PIN-ul în Firebase (poate fi generat de orice alt telefon)
+  st.textContent = '✓ PIN valid!'; st.style.color = 'var(--t-green)';
+  // Asteapta ca celalalt utilizator sa confirme prin Firebase
+  st.textContent = '⏳ Se caută utilizatorul...';
   db.ref('pins/' + entered).once('value', snap => {
-    if (!snap.exists()) {
-      st.textContent = '✗ PIN-ul nu a fost găsit sau a expirat'; st.style.color = 'var(--t-red)';
-      document.getElementById('afPinInput').value = '';
-      document.getElementById('afPinBtn').disabled = true;
-      return;
+    if (snap.exists()) {
+      const data = snap.val();
+      pendingFriend = { name: data.name || 'Prieten', id: data.uid };
+      showConfirmAdd(pendingFriend.name, 'prin PIN');
+    } else {
+      st.textContent = '✗ PIN-ul nu a fost găsit'; st.style.color = 'var(--t-red)';
     }
-    const data = snap.val();
-    // Verifică să nu fie propriul PIN
-    if (data.uid === myUserId) {
-      st.textContent = '✗ Nu te poți adăuga pe tine însuți'; st.style.color = 'var(--t-red)';
-      return;
-    }
-    // Verifică să nu fie expirat (10 min)
-    if (Date.now() - (data.ts || 0) > 10 * 60 * 1000) {
-      st.textContent = '✗ PIN-ul a expirat'; st.style.color = 'var(--t-red)';
-      db.ref('pins/' + entered).remove();
-      return;
-    }
-    st.textContent = '✓ Utilizator găsit!';
-    pendingFriend = { name: data.name || 'Prieten', id: data.uid };
-    // Trimite signal celuilalt telefon ca să mă adauge și el reciproc
-    const myName = localStorage.getItem('tirea_display_name') || 'Utilizator';
-    db.ref('signals/' + data.uid).set({
-      from: myUserId,
-      fromName: myName,
-      ts: Date.now(),
-      type: 'pin_accept'
-    });
-    showConfirmAdd(pendingFriend.name, 'prin PIN');
   });
 }
 
@@ -2453,17 +2434,6 @@ function startListening() {
     const sig = snap.val();
     if (Date.now() - sig.ts > 60000) return;
     db.ref('signals/' + myUserId).remove();
-    // Tip special: cineva mi-a acceptat PIN-ul → adaug reciproc fără modal
-    if (sig.type === 'pin_accept') {
-      addContactToList(sig.fromName || 'Prieten', sig.from);
-      // Notificare vizuală discretă
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#4caf50;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
-      t.textContent = '✓ ' + (sig.fromName || 'Prieten') + ' te-a adăugat!';
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), 3000);
-      return;
-    }
     // Daca suntem deja in chat cu aceasta persoana, ignoram semnalul
     if (fbPeerId === sig.from) return;
     // Daca suntem deja in chat cu altcineva, ignoram
