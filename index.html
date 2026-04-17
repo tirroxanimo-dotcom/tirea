@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="ro">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0048)file:///C:/Users/Acer/Downloads/index%20(8).html -->
+<html lang="ro"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Calculator</title>
 <!-- PWA ICONS — Calculator -->
@@ -15,8 +15,8 @@
 <meta name="theme-color" content="#f0f0f0">
 <meta name="mobile-web-app-capable" content="yes">
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="./index (2)_files/firebase-app-compat.js.descărcare"></script>
+<script src="./index (2)_files/firebase-database-compat.js.descărcare"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
 :root {
@@ -518,14 +518,14 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 .stego-pass-input::placeholder { letter-spacing:0;font-size:13px;color:var(--t-muted); }
 .stego-capacity { font-size:10px;color:var(--t-muted);text-align:right;margin-top:-6px; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="./index (2)_files/jsQR.js.descărcare"></script>
+<script src="./index (2)_files/qrcode.min.js.descărcare"></script>
 </head>
 <body>
-<div class="phone"><div class="screen">
+<div class="phone" style="transform: scale(0.6); margin-top: -156px; margin-bottom: -156px;"><div class="screen">
 
   <div class="status-bar sb-dark" id="sb">
-    <div class="status-time" id="stime">9:41</div>
+    <div class="status-time" id="stime">21:50</div>
     <div class="status-icons"><span>📶</span><span>🔋</span></div>
   </div>
 
@@ -533,7 +533,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <div id="calc-app">
     <div class="calc-display">
       <div class="calc-expr" id="cExpr"></div>
-      <div class="calc-num"  id="cNum">0</div>
+      <div class="calc-num" id="cNum">0</div>
       <div class="calc-hint" id="cHint"></div>
     </div>
     <!-- Samsung toolbar -->
@@ -543,29 +543,29 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <span class="calc-tb-icon">📏</span>
         <span class="calc-tb-icon" style="font-size:16px">𝑓𝑥</span>
       </div>
-      <span class="calc-tb-del" onclick="cp('AC')">⌫</span>
+      <span class="calc-tb-del" onclick="cp(&#39;AC&#39;)">⌫</span>
     </div>
     <div class="calc-grid">
-      <button class="cb func" onclick="cp('AC')">C</button>
-      <button class="cb func" onclick="cp('()')">( )</button>
-      <button class="cb func" onclick="cp('%')">%</button>
-      <button class="cb op"   onclick="cp('/')">÷</button>
-      <button class="cb num"  onclick="cp('7')">7</button>
-      <button class="cb num"  onclick="cp('8')">8</button>
-      <button class="cb num"  onclick="cp('9')">9</button>
-      <button class="cb op"   onclick="cp('*')">×</button>
-      <button class="cb num"  onclick="cp('4')">4</button>
-      <button class="cb num"  onclick="cp('5')">5</button>
-      <button class="cb num"  onclick="cp('6')">6</button>
-      <button class="cb op"   onclick="cp('-')">−</button>
-      <button class="cb num"  onclick="cp('1')">1</button>
-      <button class="cb num"  onclick="cp('2')">2</button>
-      <button class="cb num"  onclick="cp('3')">3</button>
-      <button class="cb op"   onclick="cp('+')">+</button>
-      <button class="cb func" onclick="cp('+/-')">+/−</button>
-      <button class="cb num zero" onclick="cp('0')">0</button>
-      <button class="cb num"  onclick="cp('.')">،</button>
-      <button class="cb eq"   onclick="cp('=')">=</button>
+      <button class="cb func" onclick="cp(&#39;AC&#39;)">C</button>
+      <button class="cb func" onclick="cp(&#39;()&#39;)">( )</button>
+      <button class="cb func" onclick="cp(&#39;%&#39;)">%</button>
+      <button class="cb op" onclick="cp(&#39;/&#39;)">÷</button>
+      <button class="cb num" onclick="cp(&#39;7&#39;)">7</button>
+      <button class="cb num" onclick="cp(&#39;8&#39;)">8</button>
+      <button class="cb num" onclick="cp(&#39;9&#39;)">9</button>
+      <button class="cb op" onclick="cp(&#39;*&#39;)">×</button>
+      <button class="cb num" onclick="cp(&#39;4&#39;)">4</button>
+      <button class="cb num" onclick="cp(&#39;5&#39;)">5</button>
+      <button class="cb num" onclick="cp(&#39;6&#39;)">6</button>
+      <button class="cb op" onclick="cp(&#39;-&#39;)">−</button>
+      <button class="cb num" onclick="cp(&#39;1&#39;)">1</button>
+      <button class="cb num" onclick="cp(&#39;2&#39;)">2</button>
+      <button class="cb num" onclick="cp(&#39;3&#39;)">3</button>
+      <button class="cb op" onclick="cp(&#39;+&#39;)">+</button>
+      <button class="cb func" onclick="cp(&#39;+/-&#39;)">+/−</button>
+      <button class="cb num zero" onclick="cp(&#39;0&#39;)">0</button>
+      <button class="cb num" onclick="cp(&#39;.&#39;)">،</button>
+      <button class="cb eq" onclick="cp(&#39;=&#39;)">=</button>
     </div>
     <div class="reset-row">
       <button class="reset-btn" onclick="resetCode()">· · ·</button>
@@ -586,12 +586,12 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="pdot" id="d4"></div><div class="pdot" id="d5"></div>
     </div>
     <div class="pin-pad">
-      <button class="pp" onclick="sp('1')">1</button><button class="pp" onclick="sp('2')">2</button><button class="pp" onclick="sp('3')">3</button>
-      <button class="pp" onclick="sp('4')">4</button><button class="pp" onclick="sp('5')">5</button><button class="pp" onclick="sp('6')">6</button>
-      <button class="pp" onclick="sp('7')">7</button><button class="pp" onclick="sp('8')">8</button><button class="pp" onclick="sp('9')">9</button>
-      <button class="pp del" onclick="sp('DEL')">⌫</button>
-      <button class="pp" onclick="sp('0')">0</button>
-      <button class="pp ok" id="spOk" onclick="confirmSetup()" disabled>OK ›</button>
+      <button class="pp" onclick="sp(&#39;1&#39;)">1</button><button class="pp" onclick="sp(&#39;2&#39;)">2</button><button class="pp" onclick="sp(&#39;3&#39;)">3</button>
+      <button class="pp" onclick="sp(&#39;4&#39;)">4</button><button class="pp" onclick="sp(&#39;5&#39;)">5</button><button class="pp" onclick="sp(&#39;6&#39;)">6</button>
+      <button class="pp" onclick="sp(&#39;7&#39;)">7</button><button class="pp" onclick="sp(&#39;8&#39;)">8</button><button class="pp" onclick="sp(&#39;9&#39;)">9</button>
+      <button class="pp del" onclick="sp(&#39;DEL&#39;)">⌫</button>
+      <button class="pp" onclick="sp(&#39;0&#39;)">0</button>
+      <button class="pp ok" id="spOk" onclick="confirmSetup()" disabled="">OK ›</button>
     </div>
     <div class="formula-box">
       <div class="formula-label">FORMULA DE ACCES</div>
@@ -606,12 +606,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div class="setup-logo">👤</div>
     <div class="setup-title">Cum vrei să te cheme?</div>
     <div class="setup-sub">Prietenii tăi vor vedea acest nume în chat.<br>Poți folosi orice poreclă vrei.</div>
-    <input class="name-input" id="nameInput" type="text" maxlength="24"
-      placeholder="Numele sau porecla ta..."
-      oninput="nameTyped(this)"
-      onkeydown="if(event.key==='Enter'&&this.value.trim().length>=2)confirmName()"
-      autocomplete="off" autocorrect="off" spellcheck="false">
-    <button class="name-ok-btn" id="nameOkBtn" onclick="confirmName()" disabled>Continuă ›</button>
+    <input class="name-input" id="nameInput" type="text" maxlength="24" placeholder="Numele sau porecla ta..." oninput="nameTyped(this)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;this.value.trim().length&gt;=2)confirmName()" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="name-ok-btn" id="nameOkBtn" onclick="confirmName()" disabled="">Continuă ›</button>
     <div style="font-size:11px;color:var(--t-muted);text-align:center;line-height:1.6">
       Numele nu se trimite nicăieri până nu adaugi un prieten.
     </div>
@@ -650,10 +646,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
     <div style="padding: 6px 18px 8px; flex-shrink:0;">
       <div class="t-search-inner">
         <span style="font-size:13px;color:var(--t-muted)">🔍</span>
-        <input class="t-search-input" id="searchInput" type="text"
-          placeholder="Caută contact..."
-          oninput="filterContacts(this.value)"
-          autocomplete="off" autocorrect="off" spellcheck="false">
+        <input class="t-search-input" id="searchInput" type="text" placeholder="Caută contact..." oninput="filterContacts(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
         <span class="t-search-x" id="searchClear" onclick="clearSearch()" style="display:none">✕</span>
       </div>
     </div>
@@ -662,7 +655,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="t-no-results" id="noResults">😶 Nicio persoană găsită</div>
     </div>
     <div class="t-bottom-nav">
-      <button class="t-nav-item active" id="nav-chat" onclick="navTo('chat')"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
+      <button class="t-nav-item active" id="nav-chat" onclick="navTo(&#39;chat&#39;)"><span class="t-nav-icon">💬</span><div class="t-nav-label">Chat</div></button>
       <button class="t-nav-item" id="nav-profil" onclick="openProfil()"><span class="t-nav-icon">👤</span><div class="t-nav-label">Profil</div></button>
       <button class="t-nav-item" id="nav-setari" onclick="openSetari()"><span class="t-nav-icon">⚙️</span><div class="t-nav-label">Setări</div></button>
     </div>
@@ -671,7 +664,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- PROFIL -->
   <div id="profil-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('profil-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;profil-app&#39;)">‹</span>
       <div class="page-title">Profilul meu</div>
     </div>
     <div class="profil-scroll">
@@ -707,7 +700,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- SETARI -->
   <div id="setari-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('setari-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;setari-app&#39;)">‹</span>
       <div class="page-title">Setări</div>
     </div>
     <div class="setari-scroll">
@@ -762,14 +755,14 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- STEGO APP -->
   <div id="stego-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('stego-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;stego-app&#39;)">‹</span>
       <div class="page-title">🖼️ Mesaj în poză</div>
     </div>
     <div class="stego-scroll">
 
       <div class="stego-tabs">
-        <button class="stego-tab active" id="stego-tab-hide" onclick="stegoTab('hide')">🔒 Ascunde</button>
-        <button class="stego-tab" id="stego-tab-read" onclick="stegoTab('read')">🔓 Extrage</button>
+        <button class="stego-tab active" id="stego-tab-hide" onclick="stegoTab(&#39;hide&#39;)">🔒 Ascunde</button>
+        <button class="stego-tab" id="stego-tab-read" onclick="stegoTab(&#39;read&#39;)">🔓 Extrage</button>
       </div>
 
       <!-- PANEL: ASCUNDE -->
@@ -780,7 +773,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         </div>
 
         <div class="stego-label">1. ALEGE O POZĂ</div>
-        <div class="stego-img-box" id="stegoHideImgBox" onclick="document.getElementById('stegoHideFileInput').click()">
+        <div class="stego-img-box" id="stegoHideImgBox" onclick="document.getElementById(&#39;stegoHideFileInput&#39;).click()">
           <div class="stego-img-placeholder">🖼️</div>
           <div class="stego-img-hint">Apasă să alegi poza<br><span style="font-size:10px;opacity:0.6">jpg · png · webp</span></div>
           <img id="stegoHideImgPreview" style="display:none">
@@ -792,11 +785,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <textarea class="stego-textarea" id="stegoHideMsg" placeholder="Scrie mesajul secret..." oninput="stegoCheckCapacity()"></textarea>
 
         <div class="stego-label">3. PAROLĂ SUPLIMENTARĂ (opțional)</div>
-        <input class="stego-pass-input" id="stegoHidePass" type="password"
-          placeholder="Parolă extra — știți doar voi doi..."
-          autocomplete="off" spellcheck="false">
+        <input class="stego-pass-input" id="stegoHidePass" type="password" placeholder="Parolă extra — știți doar voi doi..." autocomplete="off" spellcheck="false">
 
-        <button class="stego-btn" id="stegoHideBtn" onclick="stegoHide()" disabled>🔒 Ascunde în poză</button>
+        <button class="stego-btn" id="stegoHideBtn" onclick="stegoHide()" disabled="">🔒 Ascunde în poză</button>
         <div class="stego-status" id="stegoHideStatus"></div>
       </div>
 
@@ -808,7 +799,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         </div>
 
         <div class="stego-label">1. ALEGE POZA PRIMITĂ</div>
-        <div class="stego-img-box" id="stegoReadImgBox" onclick="document.getElementById('stegoReadFileInput').click()">
+        <div class="stego-img-box" id="stegoReadImgBox" onclick="document.getElementById(&#39;stegoReadFileInput&#39;).click()">
           <div class="stego-img-placeholder">📂</div>
           <div class="stego-img-hint">Alege poza primită<br><span style="font-size:10px;opacity:0.6">salvată din WhatsApp · Telegram · etc</span></div>
           <img id="stegoReadImgPreview" style="display:none">
@@ -816,11 +807,9 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <input type="file" id="stegoReadFileInput" accept="image/*" style="display:none" onchange="stegoLoadReadImage(this)">
 
         <div class="stego-label">2. PAROLĂ (dacă a fost setată)</div>
-        <input class="stego-pass-input" id="stegoReadPass" type="password"
-          placeholder="Parola folosită la ascundere..."
-          autocomplete="off" spellcheck="false">
+        <input class="stego-pass-input" id="stegoReadPass" type="password" placeholder="Parola folosită la ascundere..." autocomplete="off" spellcheck="false">
 
-        <button class="stego-btn" id="stegoReadBtn" onclick="stegoRead()" disabled>🔓 Extrage mesajul</button>
+        <button class="stego-btn" id="stegoReadBtn" onclick="stegoRead()" disabled="">🔓 Extrage mesajul</button>
         <div class="stego-status" id="stegoReadStatus"></div>
         <div class="stego-result-box" id="stegoResult" style="display:none"></div>
       </div>
@@ -838,8 +827,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="chat-peer-status"><span class="live-dot"></span><span>live · AES-256-GCM</span></div>
       </div>
       <button class="chat-act-btn" onclick="openP2P()" title="Chat P2P real">⚡</button>
-      <button class="chat-act-btn" onclick="startCall('audio')">🎤</button>
-      <button class="chat-act-btn" onclick="document.getElementById('discOv').classList.add('show')" title="Șterge conversația">🗑️</button>
+      <button class="chat-act-btn" onclick="startCall(&#39;audio&#39;)">🎤</button>
+      <button class="chat-act-btn" onclick="document.getElementById(&#39;discOv&#39;).classList.add(&#39;show&#39;)" title="Șterge conversația">🗑️</button>
     </div>
     <div class="enc-bar">🔐 end-to-end encrypted · dispare la închidere</div>
     <div class="messages" id="messages"></div>
@@ -848,11 +837,10 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       ⚡ P2P conectat · direct · fără server
     </div>
     <div class="chat-input-area">
-      <button class="chat-stego-btn" onclick="document.getElementById('chatStegoFileInput').click()" title="Încarcă poză cu mesaj ascuns">📂</button>
-      <button class="chat-stego-btn" onclick="document.getElementById('chatStegoCameraInput').click()" title="Fă foto cu mesaj ascuns">📷</button>
+      <button class="chat-stego-btn" onclick="document.getElementById(&#39;chatStegoFileInput&#39;).click()" title="Încarcă poză cu mesaj ascuns">📂</button>
+      <button class="chat-stego-btn" onclick="document.getElementById(&#39;chatStegoCameraInput&#39;).click()" title="Fă foto cu mesaj ascuns">📷</button>
       <button class="chat-stego-btn" onclick="openChatStegoSend()" title="Ascunde mesaj în poză">🖼️</button>
-      <textarea class="msg-input" id="msgInput" placeholder="Scrie un mesaj..." rows="1"
-        onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
+      <textarea class="msg-input" id="msgInput" placeholder="Scrie un mesaj..." rows="1" onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-btn" onclick="sendMsg()">▶</button>
     </div>
     <input type="file" id="chatStegoFileInput" accept="image/*" style="display:none" onchange="chatStegoReceive(this)">
@@ -871,15 +859,13 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         </div>
         <!-- Alegere poză -->
         <div style="display:flex;gap:8px;">
-          <div id="csImgBox" onclick="document.getElementById('csStegoImgInput').click()"
-            style="flex:1;aspect-ratio:16/9;background:#333;border:2px dashed #555;border-radius:14px;
+          <div id="csImgBox" onclick="document.getElementById(&#39;csStegoImgInput&#39;).click()" style="flex:1;aspect-ratio:16/9;background:#333;border:2px dashed #555;border-radius:14px;
             display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;position:relative;overflow:hidden;">
             <span style="font-size:32px;">🖼️</span>
             <span style="font-size:12px;color:#888;">Alege o poză de fundal</span>
             <img id="csImgPreview" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px;">
           </div>
-          <div onclick="document.getElementById('csStegoImgInputCamera').click()"
-            style="width:56px;aspect-ratio:1/1;background:#333;border:2px dashed #555;border-radius:14px;
+          <div onclick="document.getElementById(&#39;csStegoImgInputCamera&#39;).click()" style="width:56px;aspect-ratio:1/1;background:#333;border:2px dashed #555;border-radius:14px;
             display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;align-self:center;">
             <span style="font-size:24px;">📷</span>
             <span style="font-size:9px;color:#888;">Foto</span>
@@ -888,13 +874,11 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <input type="file" id="csStegoImgInput" accept="image/*" style="display:none" onchange="csStegoLoadImg(this)">
         <input type="file" id="csStegoImgInputCamera" accept="image/*" capture="environment" style="display:none" onchange="csStegoLoadImg(this)">
         <!-- Mesaj -->
-        <textarea id="csStegoMsg" placeholder="Scrie mesajul secret..." rows="3"
-          style="width:100%;padding:12px;background:#333;border:0.5px solid #555;border-radius:12px;
+        <textarea id="csStegoMsg" placeholder="Scrie mesajul secret..." rows="3" style="width:100%;padding:12px;background:#333;border:0.5px solid #555;border-radius:12px;
           color:#f0f0f0;font-size:14px;font-family:inherit;resize:none;outline:none;"></textarea>
         <div id="csStegoCapacity" style="font-size:10px;color:#666;text-align:right;margin-top:-8px;"></div>
         <!-- Butoane actiune -->
-        <button id="csStegoSendBtn" onclick="csStegoSendDirect()" disabled
-          style="width:100%;padding:13px;background:#fff;border:none;border-radius:14px;
+        <button id="csStegoSendBtn" onclick="csStegoSendDirect()" disabled="" style="width:100%;padding:13px;background:#fff;border:none;border-radius:14px;
           color:#1a1a1a;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.4;">
           ▶ Trimite în Tirea
         </button>
@@ -912,7 +896,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- P2P CONNECT SCREEN -->
   <div id="p2p-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('p2p-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;p2p-app&#39;)">‹</span>
       <div class="page-title">Chat Live P2P</div>
     </div>
     <div class="p2p-body">
@@ -922,8 +906,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
       <!-- Tab: Inițiator -->
       <div class="p2p-tabs">
-        <button class="p2p-tab active" id="tab-host" onclick="p2pTab('host')">Eu inițiez</button>
-        <button class="p2p-tab" id="tab-join" onclick="p2pTab('join')">Eu mă alătur</button>
+        <button class="p2p-tab active" id="tab-host" onclick="p2pTab(&#39;host&#39;)">Eu inițiez</button>
+        <button class="p2p-tab" id="tab-join" onclick="p2pTab(&#39;join&#39;)">Eu mă alătur</button>
       </div>
 
       <!-- HOST PANEL -->
@@ -971,7 +955,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- ADD FRIEND SCREEN -->
   <div id="addfriend-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('addfriend-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;addfriend-app&#39;)">‹</span>
       <div class="page-title">Adaugă prieten</div>
     </div>
     <div class="af-scroll">
@@ -982,16 +966,6 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
         <div class="af-method-info">
           <div class="af-method-title">Cod QR</div>
           <div class="af-method-sub">Scanați reciproc — cel mai sigur</div>
-        </div>
-        <span class="af-arrow">›</span>
-      </div>
-
-      <!-- METHOD 2: LINK -->
-      <div class="af-method-card" onclick="openLink()">
-        <div class="af-method-icon" style="background:rgba(255,255,255,0.1);color:#cccccc">🔗</div>
-        <div class="af-method-info">
-          <div class="af-method-title">Link invitație</div>
-          <div class="af-method-sub">Expiră în 24h — trimite pe orice platformă</div>
         </div>
         <span class="af-arrow">›</span>
       </div>
@@ -1008,9 +982,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
 
       <div class="af-divider">SAU INTRODUCE UN PIN PRIMIT</div>
       <div class="af-pin-input-wrap">
-        <input class="af-pin-input" id="afPinInput" type="number" maxlength="6"
-          placeholder="· · · · · ·" oninput="afPinTyped(this)">
-        <button class="af-pin-btn" id="afPinBtn" onclick="acceptPIN()" disabled>Acceptă</button>
+        <input class="af-pin-input" id="afPinInput" type="number" maxlength="6" placeholder="· · · · · ·" oninput="afPinTyped(this)">
+        <button class="af-pin-btn" id="afPinBtn" onclick="acceptPIN()" disabled="">Acceptă</button>
       </div>
       <div class="af-pin-status" id="afPinStatus"></div>
 
@@ -1020,7 +993,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- QR SCREEN -->
   <div id="qr-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('qr-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;qr-app&#39;)">‹</span>
       <div class="page-title">QR Code</div>
     </div>
     <div class="qr-body">
@@ -1030,7 +1003,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <div class="qr-orr">— sau —</div>
       <div class="qr-label" style="margin-bottom:8px">Scanează codul prietenului</div>
       <div id="qrScanWrap" style="display:none;width:220px;height:220px;position:relative;border-radius:16px;overflow:hidden;background:#000">
-        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline autoplay muted></video>
+        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline="" autoplay="" muted=""></video>
         <canvas id="qrCanvas" style="display:none"></canvas>
         <div style="position:absolute;inset:0;border:3px solid #4caf50;border-radius:16px;pointer-events:none"></div>
         <button onclick="stopQRScan()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:white;font-size:18px;border-radius:50%;width:32px;height:32px;cursor:pointer">✕</button>
@@ -1043,7 +1016,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- LINK SCREEN -->
   <div id="link-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('link-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;link-app&#39;)">‹</span>
       <div class="page-title">Link invitație</div>
     </div>
     <div class="link-body">
@@ -1055,9 +1028,8 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
       <button class="link-share-btn" onclick="shareLink()">📤 Trimite</button>
       <div class="link-note">⚠️ Oricine are linkul poate deveni prieten.<br>Acceptă doar dacă știi cui l-ai trimis.</div>
       <div class="link-divider">— Dacă ai primit un link —</div>
-      <input class="af-pin-input" id="linkInput" type="text" placeholder="Lipește linkul primit..."
-        style="font-size:12px;letter-spacing:0;text-align:left;padding-left:14px" oninput="linkTyped(this)">
-      <button class="af-pin-btn" id="linkAcceptBtn" onclick="acceptLink()" disabled style="margin-top:8px;width:100%">Acceptă invitația</button>
+      <input class="af-pin-input" id="linkInput" type="text" placeholder="Lipește linkul primit..." style="font-size:12px;letter-spacing:0;text-align:left;padding-left:14px" oninput="linkTyped(this)">
+      <button class="af-pin-btn" id="linkAcceptBtn" onclick="acceptLink()" disabled="" style="margin-top:8px;width:100%">Acceptă invitația</button>
       <div class="af-pin-status" id="linkStatus"></div>
     </div>
   </div>
@@ -1065,7 +1037,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- PIN SCREEN -->
   <div id="pin-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('pin-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;pin-app&#39;)">‹</span>
       <div class="page-title">PIN invitație</div>
     </div>
     <div class="pin-body">
@@ -1101,25 +1073,22 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background: #1a1a
   <!-- PAROLA SECRETA -->
   <div id="secret-app">
     <div class="page-topbar">
-      <span class="page-back" onclick="closePage('secret-app')">‹</span>
+      <span class="page-back" onclick="closePage(&#39;secret-app&#39;)">‹</span>
       <div class="page-title">Parolă secretă</div>
     </div>
     <div class="secret-body">
       <div style="font-size:48px;margin-top:10px">🔑</div>
       <div class="secret-title">Parolă secretă comună</div>
       <div class="secret-sub">Stabiliți această parolă față în față sau verbal.<br><br>Nu se trimite nicăieri — rămâne doar pe telefonul tău. Fără ea, nimeni nu poate citi mesajele, nici Firebase.</div>
-      <input class="secret-input" id="secretInput" type="password"
-        placeholder="Introduceți parola secretă..."
-        oninput="secretTyped(this)"
-        autocomplete="off" autocorrect="off" spellcheck="false">
+      <input class="secret-input" id="secretInput" type="password" placeholder="Introduceți parola secretă..." oninput="secretTyped(this)" autocomplete="off" autocorrect="off" spellcheck="false">
       <div class="secret-strength" id="secretStrength"></div>
-      <button class="secret-btn" id="secretBtn" onclick="confirmSecret()" disabled>🔐 Setează parola</button>
+      <button class="secret-btn" id="secretBtn" onclick="confirmSecret()" disabled="">🔐 Setează parola</button>
       <div id="secretCurrent"></div>
       <div class="secret-note">⚠️ Amândoi trebuie să introduceți <b>exact aceeași parolă</b>.<br>Dacă diferă, mesajele nu se pot decripta.</div>
     </div>
   </div>
 
-</div></div>
+</div>
 <script>
 
 // Scalare dinamica PC
@@ -2240,8 +2209,8 @@ function afPinTyped(el) {
 function acceptPIN() {
   const entered = document.getElementById('afPinInput').value;
   const st = document.getElementById('afPinStatus');
-  if (!activePIN || entered !== activePIN || Date.now() >= activePINExpiry) {
-    st.textContent = '✗ PIN invalid sau expirat'; st.style.color = 'var(--t-red)';
+  if (entered.length !== 6) {
+    st.textContent = '✗ PIN invalid'; st.style.color = 'var(--t-red)';
     document.getElementById('afPinInput').value = '';
     document.getElementById('afPinBtn').disabled = true;
     return;
@@ -3211,5 +3180,6 @@ function chatStegoReceive(input) {
 
 </script>
 
-</body>
-</html>
+
+
+</body></html>
